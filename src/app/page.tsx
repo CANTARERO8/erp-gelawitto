@@ -5,6 +5,7 @@ const COLORES = [
   { nombre: "Durazno", clase: "bg-durazno", uso: "Acentos" },
   { nombre: "Rubor", clase: "bg-rubor", uso: "Selección" },
   { nombre: "Nata", clase: "bg-nata border", uso: "Fondo" },
+    { nombre: "Tinta", clase: "bg-tinta", uso: "Texto" },
 ];
 
 export default function Inicio() {
