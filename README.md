@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gelawitto ERP
 
-## Getting Started
+Sistema de gestión interna para la heladería artesanal Gelawitto. Desarrollado con Next.js 16, React 19 y Tailwind CSS v4 sobre Supabase.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Arquitectura y Stack Tecnológico
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Framework:** Next.js 16 (App Router)
+- **Librería de interfaz:** React 19, TypeScript
+- **Estilos:** Tailwind CSS v4, Base UI
+- **Tipografías:** Fredoka (titulares) e Inter (cuerpo de texto)
+- **Base de datos y autenticación:** Supabase
+- **Pruebas:** Vitest
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Identidad Visual y Paleta de Colores
 
-## Learn More
+El sistema utiliza una paleta cromática propia inspirada en helados artesanales:
 
-To learn more about Next.js, take a look at the following resources:
+| Tono | Valor Hex | Función en el sistema |
+| :--- | :--- | :--- |
+| **Fresa** | `#e8436b` | Color primario y acciones principales |
+| **Frambuesa** | `#b0244e` | Estados hover y enlaces destacados |
+| **Mora** | `#4a1430` | Estructura de navegación y menú lateral |
+| **Durazno** | `#ff9e80` | Acentos secundarios y alertas cálidas |
+| **Rubor** | `#fde7ec` | Fondos de selección y elementos secundarios |
+| **Nata** | `#fff9f7` | Fondo principal de la aplicación |
+| **Tinta** | `#2a2126` | Tipografía principal y contraste alto |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Puesta en Marcha Local
 
-## Deploy on Vercel
+### Requisitos previos
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Node.js 22 LTS o superior
+- npm 10 o superior
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Instalación
+
+1. Clonar el repositorio:
+   ```bash
+   git clone https://github.com/zelayamoises725-star/Gelawitto.git
+   cd Gelawitto
+   ```
+
+2. Instalar dependencias del proyecto:
+   ```bash
+   npm install
+   ```
+
+3. Configurar variables de entorno:
+   Crear un archivo `.env.local` en la raíz con las credenciales de Supabase:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://lydxzihvgawjscfsrwgo.supabase.co/rest/v1/
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anonima_de_supabase
+   ```
+
+4. Iniciar el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+   Acceder a `http://localhost:3000` en el navegador.
+
+---
+
+## Comandos del Proyecto
+
+- `npm run dev`: Inicia el servidor de desarrollo local.
+- `npm run build`: Genera la compilación para producción.
+- `npm run start`: Inicia el servidor en modo producción.
+- `npm run test`: Ejecuta la suite de pruebas unitarias con Vitest.
+- `npm run lint`: Analiza el código con ESLint.
+
+---
+
+## Estructura del Repositorio
+
+- `src/app/`: Rutas, layouts y páginas de la aplicación Next.js.
+- `src/components/ui/`: Componentes base del sistema de diseño.
+- `src/lib/`: Utilidades compartidas y clientes de servicios.
+- `tests/`: Pruebas automatizadas de diseño, componentes y lógica.
+- `docs/entregable/`: Bitácora de aportes y registros del equipo de desarrollo.
