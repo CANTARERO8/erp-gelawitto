@@ -255,7 +255,7 @@ function submitLogin() {
 
             <!-- Pie de columna -->
             <div class="text-center text-xs text-muted-foreground">
-                Gelawitto Heladería Artesanal, PostgreSQL 16 y Laravel Inertia
+                Gelawitto Heladería
             </div>
         </div>
     </div>
