@@ -104,12 +104,16 @@ Construido con **Laravel**, **Vue 3 (Inertia.js + TypeScript)**, **Tailwind CSS 
    ```
    Acceder a `http://localhost:8000` en el navegador.
 
-### Credenciales operativas iniciales
+### Credenciales de Acceso al ERP (Entorno de Pruebas y Evaluación)
 
-- **Administrador:** `admin@gelawitto.com` / `password123`
-- **Producción:** `produccion@gelawitto.com` / `password123`
-- **Cajero:** `caja@gelawitto.com` / `password123`
-- **Contador:** `finanzas@gelawitto.com` / `password123`
+Por políticas de seguridad y protección de información delicada, la interfaz de inicio de sesión **no expone contraseñas ni selectores de credenciales en pantalla**. Para evaluar el sistema en los diferentes roles, utilice las siguientes cuentas iniciales generadas por los seeders:
+
+| Rol Operativo | Nombre de Usuario | Correo Electrónico | Contraseña | Perfil y Módulos Clave |
+| :--- | :--- | :--- | :--- | :--- |
+| **Administrador** | Eduardo Cantarero | `admin@gelawitto.com` | `password123` | Control total del ERP, auditoría y seguridad |
+| **Producción** | Moises Zelaya | `produccion@gelawitto.com` | `password123` | Fichas técnicas, recetas y lotes de producción |
+| **Cajero** | Valeria Mendoza | `caja@gelawitto.com` | `password123` | Punto de venta, apertura, arqueo y corte de caja |
+| **Contador** | Carlos Navarrete | `finanzas@gelawitto.com` | `password123` | Flujo de egresos, pagos y compras a proveedores |
 
 ---
 
