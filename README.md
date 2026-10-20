@@ -64,24 +64,71 @@ El sistema implementa una arquitectura modular desacoplada por dominios de negoc
 
 ## 3. Módulos Integrados del ERP
 
-1. **Autenticación y Seguridad (`/login` y `/seguridad`):**
-   - Pantalla de inicio de sesión en disposición *Split-Screen (8/4)* con fotografía de heladería artesanal, alternador de visibilidad de contraseña, protección anti-fuerza bruta (bloqueo temporal de 60 segundos con cuenta regresiva tras 5 intentos fallidos), selector de modo claro/oscuro, gestión de roles (`Administrador`, `Producción`, `Cajero`, `Contador`) y bitácora de auditoría inmutable.
-2. **Tablero Ejecutivo (`/dashboard`):**
-   - Indicadores en tiempo real de ventas del día, ventas acumuladas, valorización financiera del inventario de insumos y producto terminado, alertas de stock crítico, cuentas por pagar y tabla de rentabilidad por sabor.
-3. **Catálogos Maestros (`/catalogos`):**
-   - Administración centralizada de productos terminados (SKU, sabor, presentación, costo unitario y precio de venta), insumos/materia prima, unidades de medida, proveedores y clientes.
-4. **Compras a Proveedores (`/compras`):**
-   - Recepción transaccional de órdenes de compra que incrementa automáticamente el stock del insumo, recalcula su **costo promedio ponderado**, registra la entrada en el Kardex y genera el asiento de egreso o cuenta por pagar en Finanzas.
-5. **Inventario y Kardex Inmutable (`/inventario`):**
-   - Existencias valorizadas en tiempo real, registro justificado de mermas o ajustes físicos (bloqueando saldos negativos) y visor cronológico del Libro Mayor de Kardex.
-6. **Recetas y Producción por Lotes (`/produccion`):**
-   - Fichas técnicas con formulación por sabor y procesamiento transaccional de lotes que escala los ingredientes requeridos, verifica disponibilidad de materia prima, descuenta insumos en Kardex, calcula el costo unitario real del lote, registra la merma e ingresa el helado terminado al almacén.
-7. **Ventas, Punto de Venta y Caja (`/ventas`):**
-   - Control de apertura de turno con fondo inicial, cobro en mostrador/mayorista (`Efectivo`, `Tarjeta`, `Transferencia`) con descuento automático de existencias, ingreso en Finanzas y corte/arqueo de caja con cálculo exacto de diferencia.
-8. **Finanzas Operativas (`/finanzas`):**
-   - Monitor de ingresos cobrados, egresos pagados, flujo neto de efectivo, registro de gastos operativos de planta y liquidación de cuentas por pagar pendientes a proveedores.
+El sistema cuenta con una interfaz con soporte completo para **Modo Oscuro** y **Modo Claro**, optimizada para sesiones prolongadas en planta de producción, almacén y puntos de venta:
+
+### 3.1 Portal de Acceso y Autenticación (`/login`)
+![Portal de Acceso - Modo Oscuro](docs/images/00-login.png)
+
+- **Distribución Split-Screen:** Fotografía artesanal a la izquierda y panel de autenticación limpio a la derecha con el isotipo oficial de Gelawitto.
+- **Seguridad Operativa:** Alternador de visibilidad de contraseña, persistencia de sesión ("Recuérdame en este equipo") y blindaje automático contra ataques de fuerza bruta (bloqueo temporal de 60 segundos con cronómetro regresivo tras 5 intentos fallidos consecutivos).
+- **Selector de Tema:** Alternador en esquina superior para conmutar al instante entre modo claro y modo oscuro.
+
+### 3.2 Tablero Ejecutivo Principal (`/dashboard`)
+![Tablero Ejecutivo - Modo Oscuro](docs/images/01-dashboard.png)
+
+- **Métricas en Tiempo Real:** Total de ventas del día, acumulado general, valorización financiera de inventario (helados y materia prima) y compromisos de pago.
+- **Acceso Rápido Operativo:** Botones de acción directa para recepción de compras, producción de lotes y apertura de punto de venta.
+- **Margen por Sabor y Alertas:** Tabla comparativa de rentabilidad porcentual por producto y alertas automáticas de insumos que han alcanzado su umbral mínimo de seguridad.
+
+### 3.3 Catálogos Maestros (`/catalogos`)
+![Catálogos Maestros - Modo Oscuro](docs/images/02-catalogos.png)
+
+- **Productos Terminados:** Registro y administración de sabores, presentaciones (tinas de 1L, etc.), costo unitario base y precio de venta al público.
+- **Insumos y Materia Prima:** Clasificación por unidad de medida (`kg`, `L`, `ud`) con umbral mínimo para disparo de alertas.
+- **Proveedores y Clientes:** Directorio comercial con condiciones comerciales, teléfonos y datos de contacto.
+
+### 3.4 Compras y Abastecimiento (`/compras`)
+![Compras a Proveedores - Modo Oscuro](docs/images/03-compras.png)
+
+- **Recepción de Mercancía:** Formulario guiado que asocia proveedor autorizado, insumo recibido, cantidad ingresada y costo unitario pactado.
+- **Recálculo Ponderado:** Actualización en tiempo real del **costo promedio ponderado** del insumo sin desfase contable.
+- **Afectación Doble:** Asiento inmediato en el Libro de Kardex y registro automático de la cuenta por pagar en Finanzas.
+
+### 3.5 Control de Inventario y Kardex Inmutable (`/inventario`)
+![Inventario y Libro de Kardex - Modo Oscuro](docs/images/04-inventario.png)
+
+- **Existencias Valorizadas:** Visor de existencias en almacén con cálculo del valor económico total y estado operativo del stock.
+- **Ajustes y Mermas Justificadas:** Registro de mermas con justificación técnica obligatoria y bloqueo pesimista contra saldos negativos.
+- **Libro Mayor de Kardex:** Historial inmutable ordenado cronológicamente con folio referencial, tipo de movimiento, insumo/producto, cantidad, saldo resultante y operador responsable.
+
+### 3.6 Formulación Técnica y Producción por Lotes (`/produccion`)
+![Producción por Lotes - Modo Oscuro](docs/images/05-produccion.png)
+
+- **Fórmulas Maestras:** Especificaciones técnicas oficiales con requerimiento de materia prima por cada sabor base (leche fresca, crema batida, fruta, azúcares y empaques).
+- **Procesamiento de Lotes:** Validación automática de disponibilidad de insumos en bodega, descuento transaccional en Kardex, cálculo del costo unitario real basado en mermas e ingreso del helado terminado al almacén.
+
+### 3.7 Punto de Venta y Control de Turnos de Caja (`/ventas`)
+![Punto de Venta y Control de Caja - Modo Oscuro](docs/images/06-ventas.png)
+
+- **Gestión de Turnos de Caja:** Apertura obligatoria con fondo inicial en gaveta, registro de cajero responsable y seguimiento del turno activo.
+- **Cobro de Mostrador y Mayoristas:** Facturación ágil con soporte para efectivo, tarjeta o transferencia bancaria y deducción automática del stock.
+- **Arqueo y Cierre de Caja:** Comparación contra el efectivo esperado según ventas registradas y emisión de diferencias para auditoría financiera.
+
+### 3.8 Finanzas Operativas y Flujo de Caja (`/finanzas`)
+![Finanzas Operativas - Modo Oscuro](docs/images/07-finanzas.png)
+
+- **Balance de Liquidez:** Métrica de ingresos cobrados, compras y egresos operativos pagados, junto con el flujo neto de efectivo.
+- **Gastos de Planta:** Asiento contable de servicios operativos (electricidad, mantenimiento preventivo de mantecadoras, logística).
+- **Liquidación de Cuentas por Pagar:** Listado de facturas pendientes a proveedores con botón de liquidación en un solo clic.
+
+### 3.9 Administración de Usuarios, Roles y Auditoría (`/seguridad`)
+![Seguridad y Auditoría - Modo Oscuro](docs/images/08-seguridad.png)
+
+- **Directorio de Colaboradores:** Creación de usuarios con roles asignados (`Administrador`, `Producción`, `Cajero`, `Contador`) y switch para suspender o activar cuentas inmediatamente.
+- **Bitácora de Auditoría Inmutable:** Registro cronológico de accesos, cierres de sesión, suspensiones y operaciones clave para cumplimiento y trazabilidad interna.
 
 ---
+
 
 ## 4. Requisitos Previos del Sistema
 
