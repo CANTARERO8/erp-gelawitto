@@ -12,6 +12,7 @@ use App\Models\Produccion\Receta;
 use App\Models\User;
 use App\Models\Ventas\CajaTurno;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ModularArchitectureTest extends TestCase
@@ -24,6 +25,108 @@ class ModularArchitectureTest extends TestCase
     {
         parent::setUp();
         $this->adminUser = User::where('email', 'admin@gelawitto.com')->firstOrFail();
+    }
+
+    public function test_inertia_payloads_match_expected_schema_across_all_modules(): void
+    {
+        $this->actingAs($this->adminUser)->get('/dashboard')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Erp/Dashboard')
+                ->has('kpis.ventas_hoy')
+                ->has('kpis.ventas_acumuladas')
+                ->has('kpis.valor_inventario_insumos')
+                ->has('kpis.valor_inventario_productos')
+                ->has('kpis.alertas_stock')
+                ->has('kpis.cuentas_por_pagar')
+                ->has('insumosCriticos')
+                ->has('ultimosMovimientos')
+                ->has('productosRentabilidad')
+            );
+
+        $this->actingAs($this->adminUser)->get('/catalogos')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Erp/Catalogos')
+                ->has('productos.0', fn (Assert $p) => $p
+                    ->hasAll(['id', 'sku', 'nombre', 'sabor', 'presentacion', 'precio_venta', 'costo_unitario', 'stock_actual', 'stock_minimo', 'activo'])
+                )
+                ->has('insumos.0', fn (Assert $i) => $i
+                    ->hasAll(['id', 'codigo', 'nombre', 'categoria', 'unidad', 'unidad_id', 'stock_actual', 'stock_minimo', 'costo_promedio', 'activo'])
+                )
+                ->has('proveedores')
+                ->has('clientes')
+                ->has('unidades')
+            );
+
+        $this->actingAs($this->adminUser)->get('/compras')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Erp/Compras')
+                ->has('ordenes.0', fn (Assert $o) => $o
+                    ->hasAll(['id', 'folio', 'proveedor_nombre', 'comprador_nombre', 'fecha_emision', 'estado', 'total', 'notas'])
+                )
+                ->has('proveedores')
+                ->has('insumos')
+            );
+
+        $this->actingAs($this->adminUser)->get('/inventario')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Erp/Inventario')
+                ->has('insumos')
+                ->has('productos')
+                ->has('kardex.0', fn (Assert $k) => $k
+                    ->hasAll(['id', 'fecha', 'tipo_item', 'nombre_item', 'tipo_movimiento', 'referencia', 'cantidad', 'stock_resultante', 'costo_unitario', 'responsable'])
+                )
+            );
+
+        $this->actingAs($this->adminUser)->get('/produccion')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Erp/Produccion')
+                ->has('recetas.0', fn (Assert $r) => $r
+                    ->hasAll(['id', 'nombre', 'producto_nombre', 'producto_sku', 'sabor', 'rendimiento_unidades', 'tiempo_preparacion_min', 'instrucciones', 'ingredientes'])
+                )
+                ->has('lotes.0', fn (Assert $l) => $l
+                    ->hasAll(['id', 'codigo_lote', 'producto_nombre', 'producto_sku', 'operador_nombre', 'fecha_produccion', 'cantidad_programada', 'cantidad_obtenida', 'merma', 'costo_total_lote', 'costo_unitario_resultante', 'estado', 'notas'])
+                )
+            );
+
+        $this->actingAs($this->adminUser)->get('/ventas')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Erp/Ventas')
+                ->has('turnoActivo')
+                ->has('ventas')
+                ->has('productos')
+                ->has('clientes')
+                ->has('historialTurnos')
+            );
+
+        $this->actingAs($this->adminUser)->get('/finanzas')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Erp/Finanzas')
+                ->has('movimientos.0', fn (Assert $m) => $m
+                    ->hasAll(['id', 'folio', 'fecha', 'tipo', 'categoria', 'concepto', 'referencia', 'monto', 'estado', 'fecha_vencimiento', 'responsable'])
+                )
+                ->has('resumen', fn (Assert $r) => $r
+                    ->hasAll(['ingresos', 'egresos', 'flujo_neto', 'cuentas_por_pagar'])
+                )
+            );
+
+        $this->actingAs($this->adminUser)->get('/seguridad')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Erp/Seguridad')
+                ->has('usuarios.0', fn (Assert $u) => $u
+                    ->hasAll(['id', 'name', 'email', 'rol', 'activo', 'ultimo_acceso'])
+                )
+                ->has('bitacora.0', fn (Assert $b) => $b
+                    ->hasAll(['id', 'modulo', 'accion', 'descripcion', 'ip_address', 'usuario_nombre', 'usuario_rol', 'created_at'])
+                )
+            );
     }
 
     public function test_catalogos_module_creates_product_and_insumo(): void
@@ -59,19 +162,29 @@ class ModularArchitectureTest extends TestCase
         $proveedor = Proveedor::firstOrFail();
         $insumo = Insumo::firstOrFail();
         $stockInicial = (float) $insumo->stock_actual;
+        $costoInicial = (float) $insumo->costo_promedio;
+
+        $cantidadComprada = 15.5;
+        $costoUnitarioCompra = 2.50;
+        $subtotal = round($cantidadComprada * $costoUnitarioCompra, 2);
 
         $response = $this->actingAs($this->adminUser)->post('/compras', [
             'proveedor_id' => $proveedor->id,
             'insumo_id' => $insumo->id,
-            'cantidad' => 15.5,
-            'costo_unitario' => 2.50,
+            'cantidad' => $cantidadComprada,
+            'costo_unitario' => $costoUnitarioCompra,
             'modalidad_pago' => 'Pagado',
             'notas' => 'Prueba compra modular',
         ]);
 
         $response->assertSessionHasNoErrors();
         $insumo->refresh();
-        $this->assertEquals(round($stockInicial + 15.5, 3), (float) $insumo->stock_actual);
+
+        $nuevoStockEsperado = round($stockInicial + $cantidadComprada, 3);
+        $nuevoCostoPromedioEsperado = round((($stockInicial * $costoInicial) + $subtotal) / $nuevoStockEsperado, 2);
+
+        $this->assertEquals($nuevoStockEsperado, (float) $insumo->stock_actual);
+        $this->assertEquals($nuevoCostoPromedioEsperado, (float) $insumo->costo_promedio);
         $this->assertDatabaseHas('movimientos_inventario', [
             'item_id' => $insumo->id,
             'tipo_movimiento' => 'Entrada por Compra',
@@ -82,7 +195,7 @@ class ModularArchitectureTest extends TestCase
         ]);
     }
 
-    public function test_inventario_module_records_stock_adjustments(): void
+    public function test_inventario_module_records_stock_adjustments_and_blocks_negative_stock(): void
     {
         $insumo = Insumo::where('stock_actual', '>', 5)->firstOrFail();
         $stockInicial = (float) $insumo->stock_actual;
@@ -102,9 +215,19 @@ class ModularArchitectureTest extends TestCase
             'tipo_movimiento' => 'Merma',
             'item_id' => $insumo->id,
         ]);
+
+        // Attempt to deduct more than available stock
+        $excessResponse = $this->actingAs($this->adminUser)->post('/inventario/ajustes', [
+            'tipo_item' => 'insumo',
+            'item_id' => $insumo->id,
+            'tipo_movimiento' => 'Ajuste Negativo',
+            'cantidad' => 999999,
+            'motivo' => 'Intento de stock negativo',
+        ]);
+        $excessResponse->assertSessionHasErrors('cantidad');
     }
 
-    public function test_produccion_module_processes_batch_correctly(): void
+    public function test_produccion_module_processes_batch_and_blocks_insufficient_ingredients(): void
     {
         $receta = Receta::with(['producto', 'ingredientes.insumo'])->firstOrFail();
         $producto = $receta->producto;
@@ -124,12 +247,33 @@ class ModularArchitectureTest extends TestCase
             'receta_id' => $receta->id,
             'estado' => 'Finalizado',
         ]);
+
+        // Attempt huge batch that exceeds raw material stock
+        $hugeBatchResponse = $this->actingAs($this->adminUser)->post('/produccion/lotes', [
+            'receta_id' => $receta->id,
+            'cantidad_programada' => 100000,
+            'cantidad_obtenida' => 100000,
+            'notas' => 'Lote imposible por falta de insumos',
+        ]);
+        $hugeBatchResponse->assertSessionHasErrors('receta_id');
     }
 
     public function test_ventas_module_opens_shift_processes_sale_and_closes_shift(): void
     {
         // Close any existing open shift to start clean
         CajaTurno::where('estado', 'Abierta')->update(['estado' => 'Cerrada', 'fecha_cierre' => now()]);
+
+        $producto = Producto::where('stock_actual', '>', 5)->firstOrFail();
+        $cliente = Cliente::firstOrFail();
+
+        // Attempting sale without open shift must fail
+        $noShiftResponse = $this->actingAs($this->adminUser)->post('/ventas', [
+            'producto_id' => $producto->id,
+            'cliente_id' => $cliente->id,
+            'cantidad' => 1,
+            'metodo_pago' => 'Efectivo',
+        ]);
+        $noShiftResponse->assertSessionHasErrors('producto_id');
 
         // 1. Abrir caja
         $openResponse = $this->actingAs($this->adminUser)->post('/ventas/caja', [
@@ -141,9 +285,14 @@ class ModularArchitectureTest extends TestCase
         $turno = CajaTurno::where('estado', 'Abierta')->firstOrFail();
         $this->assertEquals('100.00', (string) $turno->monto_inicial);
 
+        // Attempting to open a second shift while one is open must fail
+        $duplicateShiftResponse = $this->actingAs($this->adminUser)->post('/ventas/caja', [
+            'accion' => 'abrir',
+            'monto_inicial' => 50.00,
+        ]);
+        $duplicateShiftResponse->assertSessionHasErrors('monto_inicial');
+
         // 2. Realizar venta
-        $producto = Producto::where('stock_actual', '>', 5)->firstOrFail();
-        $cliente = Cliente::firstOrFail();
         $stockAntes = (float) $producto->stock_actual;
 
         $ventaResponse = $this->actingAs($this->adminUser)->post('/ventas', [
@@ -192,7 +341,7 @@ class ModularArchitectureTest extends TestCase
         $this->assertEquals('Egreso', $mov->tipo);
     }
 
-    public function test_seguridad_module_manages_users_and_logs_audit(): void
+    public function test_seguridad_module_manages_users_prevents_self_lockout_and_logs_audit(): void
     {
         $newUserResponse = $this->actingAs($this->adminUser)->post('/seguridad/usuarios', [
             'name' => 'Carlos Gelataio Test',
@@ -211,9 +360,50 @@ class ModularArchitectureTest extends TestCase
         $user->refresh();
         $this->assertFalse($user->activo);
 
+        // Self-deactivation must be blocked
+        $selfToggle = $this->actingAs($this->adminUser)->post("/seguridad/usuarios/{$this->adminUser->id}/toggle");
+        $selfToggle->assertSessionHasErrors('id');
+
         $this->assertDatabaseHas('bitacora_auditoria', [
             'modulo' => 'Seguridad',
             'accion' => 'Cambio de Estado',
         ]);
+    }
+
+    public function test_auth_module_enforces_rate_limiting_and_blocks_inactive_users(): void
+    {
+        $inactiveUser = User::create([
+            'name' => 'Inactivo Test',
+            'email' => 'inactivo.test@gelawitto.com',
+            'password' => bcrypt('password123'),
+            'rol' => 'Cajero',
+            'activo' => false,
+        ]);
+
+        // Inactive user cannot login even with valid password
+        $inactiveResponse = $this->post('/login', [
+            'email' => $inactiveUser->email,
+            'password' => 'password123',
+        ]);
+        $inactiveResponse->assertSessionHasErrors('email');
+        $this->assertGuest();
+
+        // 5 failed attempts trigger lockout timer
+        \Illuminate\Support\Facades\RateLimiter::clear('gelawitto-login|127.0.0.1');
+
+        for ($i = 1; $i <= 5; $i++) {
+            $failResponse = $this->post('/login', [
+                'email' => 'admin@gelawitto.com',
+                'password' => 'wrong-password-'.$i,
+            ]);
+
+            if ($i < 5) {
+                $failResponse->assertSessionHasErrors(['email', 'attempts']);
+            } else {
+                $failResponse->assertSessionHasErrors(['lockout', 'timer']);
+            }
+        }
+
+        \Illuminate\Support\Facades\RateLimiter::clear('gelawitto-login|127.0.0.1');
     }
 }
