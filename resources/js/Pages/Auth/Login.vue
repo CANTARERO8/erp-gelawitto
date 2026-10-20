@@ -33,12 +33,7 @@ const buttonLabel = computed(() => {
     return 'Inicia sesión';
 });
 
-const demoAccounts = [
-    { rol: 'Administrador', nombre: 'Eduardo Cantarero', email: 'admin@gelawitto.com' },
-    { rol: 'Producción', nombre: 'Moises Zelaya', email: 'produccion@gelawitto.com' },
-    { rol: 'Cajero', nombre: 'Valeria Mendoza', email: 'caja@gelawitto.com' },
-    { rol: 'Contador', nombre: 'Carlos Navarrete', email: 'finanzas@gelawitto.com' },
-];
+
 
 onMounted(() => {
     isDark.value = document.documentElement.classList.contains('dark');
@@ -73,10 +68,6 @@ function toggleTheme() {
     localStorage.setItem('gelawitto-theme', isDark.value ? 'dark' : 'light');
 }
 
-function selectDemoAccount(email: string) {
-    form.email = email;
-    form.password = 'password123';
-}
 
 function submitLogin() {
     if (isLockedOut.value) return;
@@ -116,16 +107,14 @@ function submitLogin() {
 
                     <!-- Insignia institucional flotante en esquina superior izquierda -->
                     <div
-                        class="absolute top-7 left-8 flex items-center gap-3.5 px-4 py-3 rounded-[12px]"
+                        class="absolute top-7 left-8 flex items-center px-3.5 py-2.5 rounded-[14px]"
                         style="background: rgba(255, 255, 255, 0.94); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22)"
                     >
-                        <div class="w-10 h-10 rounded-lg bg-fresa flex items-center justify-center text-white font-titulo font-bold text-xl">
-                            G
-                        </div>
-                        <div>
-                            <p class="font-titulo font-bold text-base text-[#2a2126] leading-none">Gelawitto</p>
-                            <p class="text-xs font-medium text-[#b0244e] mt-1">Heladería Artesanal, ERP</p>
-                        </div>
+                        <img
+                            src="/images/gelawitto.svg"
+                            alt="Logo Gelawitto"
+                            class="h-10 w-auto object-contain"
+                        />
                     </div>
 
                     <!-- Pie editorial sobre la fotografía -->
@@ -145,11 +134,12 @@ function submitLogin() {
         <div class="col-span-12 lg:col-span-4 flex flex-col justify-between bg-surface px-6 py-8 sm:px-10 lg:px-12 border-l border-border">
             <!-- Barra superior con logo y selector de tema -->
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-lg bg-fresa flex items-center justify-center text-white font-titulo font-bold text-lg">
-                        G
-                    </div>
-                    <span class="font-titulo font-semibold text-lg text-foreground">Gelawitto ERP</span>
+                <div class="flex items-center">
+                    <img
+                        src="/images/gelawitto.svg"
+                        alt="Gelawitto ERP"
+                        class="h-9 w-auto object-contain rounded-lg shadow-xs"
+                    />
                 </div>
 
                 <button
@@ -166,10 +156,17 @@ function submitLogin() {
 
             <!-- Formulario central -->
             <div class="w-full max-w-md mx-auto my-auto py-8">
-                <h1 class="text-2xl sm:text-3xl font-titulo font-bold text-foreground mb-1.5">
+                <div class="flex justify-center mb-5">
+                    <img
+                        src="/images/gelawitto2.svg"
+                        alt="Gelawitto Heladería Artesanal"
+                        class="w-24 h-auto object-contain rounded-2xl shadow-xs border border-border/30"
+                    />
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-titulo font-bold text-foreground text-center mb-1.5">
                     Bienvenido a Gelawitto
                 </h1>
-                <p class="text-sm text-muted-foreground mb-6">
+                <p class="text-sm text-muted-foreground text-center mb-6">
                     Inicia sesión para acceder al sistema de planificación y control interno
                 </p>
 
@@ -273,25 +270,6 @@ function submitLogin() {
                         {{ buttonLabel }}
                     </button>
                 </form>
-
-                <!-- Selector rápido de cuentas por rol para evaluación y pruebas -->
-                <div class="mt-8 pt-6 border-t border-border">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                        Cuentas operativas de acceso rápido (contraseña: password123)
-                    </p>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button
-                            v-for="acc in demoAccounts"
-                            :key="acc.email"
-                            type="button"
-                            @click="selectDemoAccount(acc.email)"
-                            class="text-left p-2.5 rounded-lg border border-border bg-background hover:border-fresa hover:bg-secondary/40 transition-colors cursor-pointer"
-                        >
-                            <p class="text-xs font-semibold text-foreground">{{ acc.rol }}</p>
-                            <p class="text-[11px] text-muted-foreground truncate">{{ acc.email }}</p>
-                        </button>
-                    </div>
-                </div>
             </div>
 
             <!-- Pie de columna -->

@@ -103,15 +103,16 @@ function logout() {
                 isCollapsed ? 'w-20' : 'w-68',
             ]"
         >
-            <div class="h-18 flex items-center justify-between px-5 border-b border-white/10">
+            <div class="h-18 flex items-center justify-between px-4 border-b border-white/10">
                 <Link href="/dashboard" class="flex items-center gap-3 overflow-hidden">
-                    <div class="w-10 h-10 rounded-lg bg-fresa flex items-center justify-center text-white font-titulo font-bold text-xl shrink-0 shadow-sm">
-                        G
-                    </div>
-                    <div v-if="!isCollapsed" class="leading-tight">
-                        <span class="block font-titulo text-lg font-semibold tracking-tight text-white">Gelawitto</span>
-                        <span class="block text-xs text-sidebar-muted">Sistema ERP Artesanal</span>
-                    </div>
+                    <img
+                        :src="isCollapsed ? '/images/gelawitto2.svg' : '/images/gelawitto.svg'"
+                        alt="Gelawitto"
+                        :class="[
+                            'object-contain rounded-lg shrink-0 transition-all',
+                            isCollapsed ? 'w-10 h-10' : 'h-10 w-auto max-w-[175px]'
+                        ]"
+                    />
                 </Link>
             </div>
 
