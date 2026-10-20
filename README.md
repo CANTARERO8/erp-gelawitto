@@ -259,7 +259,7 @@ El comando `php artisan migrate:fresh --seed` construye las siguientes tablas en
 
 ## 8. Credenciales de Acceso al ERP
 
-Para ingresar al sistema una vez ejecutado `php artisan migrate:fresh --seed`, puedes utilizar cualquiera de los perfiles preconfigurados (o usar los botones de acceso rápido en la pantalla de Login en modo demostración):
+Por políticas de seguridad, la interfaz de inicio de sesión no expone contraseñas ni selectores de acceso rápido en pantalla. Para ingresar al sistema una vez ejecutado `php artisan migrate:fresh --seed`, utiliza cualquiera de las siguientes cuentas iniciales:
 
 | Rol Operativo | Nombre de Usuario | Correo Electrónico | Contraseña | Perfil y Módulos Clave |
 | :--- | :--- | :--- | :--- | :--- |
