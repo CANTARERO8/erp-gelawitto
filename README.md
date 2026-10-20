@@ -223,28 +223,37 @@ A continuación se detalla la función técnica de cada directorio y archivo cla
 - `app/Repositories/Finanzas/FinanzasRepository.php`: Agrupación de flujo de caja y balance de cuentas pendientes.
 - `app/Repositories/Seguridad/SeguridadRepository.php`: Consulta de eventos de auditoría del sistema.
 
-### 5. Controladores y Lógica de Negocio (`app/Http/Controllers/`)
-- `app/Http/Controllers/AuthController.php`: Gestión del ciclo de autenticación:
-  - Validación de credenciales contra PostgreSQL.
-  - Mecanismo anti-fuerza bruta: bloqueo temporal de 60 segundos tras 5 intentos fallidos con feedback al usuario.
-  - Regeneración de identificador de sesión y cierre seguro (`logout`).
-- `app/Http/Controllers/ErpController.php`: Orquestador principal de las operaciones del ERP:
-  - `dashboard()`: Agregación en tiempo real de ventas, valorización de inventario y alertas de stock crítico.
-  - `catalogos()`, `storeProducto()`, `storeInsumo()`: Alta y actualización de productos y materia prima.
-  - `compras()`, `storeCompra()`: Transacción atómica de recepción de insumos, cálculo de costo promedio ponderado y asiento en Kardex.
-  - `inventario()`, `ajusteInventario()`: Ajustes manuales y mermas con registro estricto en el libro de Kardex.
-  - `produccion()`, `storeReceta()`, `procesarLote()`: Deducción atómica de insumos de inventario, ingreso del helado terminado y prorrateo de costo.
-  - `ventas()`, `abrirCaja()`, `storeVenta()`, `cerrarCaja()`: Validación de turno activo, cobro multiformato y cálculo de diferencia de arqueo.
-  - `finanzas()`, `storeGasto()`: Control de gastos de operación y pagos a proveedores.
-  - `seguridad()`: Administración de usuarios y monitoreo de la bitácora de auditoría.
+### 5. Capa de Servicios y Transacciones de Negocio (`app/Services/`)
+- `app/Services/Catalogos/CatalogosService.php`: Creación de productos e insumos con registro en bitácora de auditoría.
+- `app/Services/Compras/ComprasService.php`: Procesamiento transaccional de compras, actualización de costo promedio y asientos en Kardex.
+- `app/Services/Inventario/InventarioService.php`: Registro estricto de mermas y ajustes físicos con actualización de saldos.
+- `app/Services/Produccion/ProduccionService.php`: Deducción atómica de ingredientes por receta, alta de producto terminado y cálculo de costo unitario real.
+- `app/Services/Ventas/VentasService.php`: Apertura, validación de turno y arqueo/corte de caja; emisión de ventas con descuento automático de existencias.
+- `app/Services/Finanzas/FinanzasService.php`: Asiento de egresos y liquidación de cuentas por pagar a proveedores.
+- `app/Services/Seguridad/SeguridadService.php`: Gestión de usuarios, conmutación de estado activo/inactivo y registro en bitácora.
+
+### 6. Validaciones de Entrada y Transformación API (`app/Http/Requests/` y `app/Http/Resources/`)
+- `app/Http/Requests/`: Reglas de validación fuertemente tipadas por módulo (`StoreProductoRequest`, `StoreInsumoRequest`, `StoreCompraRequest`, `StoreAjusteRequest`, `StoreLoteRequest`, `StoreVentaRequest`, `GestionarCajaRequest`, `StoreGastoRequest`, `StoreUsuarioRequest`, `LoginRequest`).
+- `app/Http/Resources/`: Formateadores de recursos JSON para respuestas normalizadas e interoperables en cada módulo del ERP (`ProductoResource`, `InsumoResource`, `OrdenCompraResource`, `KardexResource`, `LoteResource`, `VentaResource`, `FinanzasMovimientoResource`, etc.).
+
+### 7. Controladores Modulares por Dominio (`app/Http/Controllers/`)
+- `app/Http/Controllers/Auth/AuthController.php`: Gestión de sesión, validación de credenciales y bloqueo temporal anti-fuerza bruta (60 segundos tras 5 intentos fallidos).
+- `app/Http/Controllers/Dashboard/DashboardController.php`: Agregación en tiempo real de ventas, valorización de inventario y alertas de stock crítico.
+- `app/Http/Controllers/Catalogos/CatalogosController.php`: Visualización y alta de productos y materias primas.
+- `app/Http/Controllers/Compras/ComprasController.php`: Recepción de mercancía y consulta histórica de órdenes.
+- `app/Http/Controllers/Inventario/InventarioController.php`: Visualización de inventario valorizado y libro de Kardex inmutable.
+- `app/Http/Controllers/Produccion/ProduccionController.php`: Fichas técnicas de recetas y procesamiento de lotes con merma.
+- `app/Http/Controllers/Ventas/VentasController.php`: Punto de venta, cobro multiformato, apertura y arqueo de caja.
+- `app/Http/Controllers/Finanzas/FinanzasController.php`: Balance financiero, flujo operativo y pago a proveedores.
+- `app/Http/Controllers/Seguridad/SeguridadController.php`: Administración de operadores y visualizador de auditoría.
 - `app/Http/Middleware/HandleInertiaRequests.php`: Puente de datos compartidos entre Laravel e Inertia (usuario autenticado, rol, notificaciones flash).
 
-### 6. Rutas del Sistema (`routes/`)
+### 8. Rutas del Sistema (`routes/`)
 - `routes/web.php`: Mapa centralizado de navegación:
   - Rutas de acceso público: `/` (redirección a login o dashboard), `/login` (formulario y procesamiento).
   - Rutas protegidas por middleware `auth`: `/dashboard`, `/catalogos`, `/compras`, `/inventario`, `/produccion`, `/ventas`, `/finanzas`, `/seguridad` y `/logout`.
 
-### 7. Interfaz de Usuario y Vistas Reactivas (`resources/`)
+### 9. Interfaz de Usuario y Vistas Reactivas (`resources/`)
 - `resources/views/app.blade.php`: Plantilla raíz Blade que carga las fuentes tipográficas institucionales (Fredoka e Inter), meta tags responsivos y el bundle compilado de Vite.
 - `resources/css/app.css`: Configuración visual con Tailwind CSS v4, definición de tokens de color corporativo Gelawitto (`fresa`, `frambuesa`, `mora`, `durazno`, `rubor`, `nata`, `tinta`) y estilos para transiciones y desenfoques.
 - `resources/js/app.ts`: Punto de entrada del cliente TypeScript que inicializa la aplicación Inertia con Vue 3.
@@ -266,10 +275,10 @@ A continuación se detalla la función técnica de cada directorio y archivo cla
   - `Finanzas.vue`: Monitor de balance financiero, cuentas por pagar a proveedores y registro de egresos operativos.
   - `Seguridad.vue`: Directorio de operadores, asignación de roles y visor de bitácora de auditoría.
 
-### 8. Pruebas Automatizadas y Aseguramiento de Calidad (`tests/`)
+### 10. Pruebas Automatizadas y Aseguramiento de Calidad (`tests/`)
 - `tests/Feature/ExampleTest.php`: Pruebas de integración en PHPUnit que validan la respuesta del login, el bloqueo de rutas a usuarios no autenticados, el acceso al dashboard con credenciales válidas y la consistencia transaccional.
 - `tests/tema.test.ts`: Pruebas automatizadas en Vitest que aseguran la fidelidad de la paleta de colores institucional (`#e8436b`, `#b0244e`, `#4a1430`, etc.) y los elementos de seguridad de la pantalla de inicio de sesión.
 
-### 9. Documentación y Entregables (`docs/`)
+### 11. Documentación y Entregables (`docs/`)
 - `docs/entregable/bitacora-aportes.md`: Bitácora histórica con la trazabilidad de cada aporte, responsabilidades y aprendizajes técnicos de los integrantes del equipo.
 
