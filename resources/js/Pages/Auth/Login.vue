@@ -109,10 +109,7 @@ function submitLogin() {
 
                     <!-- Pie editorial sobre la fotografía -->
                     <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-8 text-white">
-                        <p class="text-xs uppercase tracking-widest text-durazno font-semibold">
-                            Control Operativo Integrado
-                        </p>
-                        <h2 class="text-2xl font-titulo font-semibold mt-1 max-w-2xl">
+                        <h2 class="text-2xl font-titulo font-semibold max-w-2xl">
                             Trazabilidad de insumos lácteos, fruta fresca, lotes de mantecación y punto de venta.
                         </h2>
                     </div>
