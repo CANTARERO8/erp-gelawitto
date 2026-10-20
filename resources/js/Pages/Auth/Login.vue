@@ -105,17 +105,7 @@ function submitLogin() {
                         class="w-full h-[78vh] object-cover block"
                     />
 
-                    <!-- Insignia institucional flotante en esquina superior izquierda -->
-                    <div
-                        class="absolute top-7 left-8 flex items-center px-3.5 py-2.5 rounded-[14px]"
-                        style="background: rgba(255, 255, 255, 0.94); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22)"
-                    >
-                        <img
-                            src="/images/gelawitto.svg"
-                            alt="Logo Gelawitto"
-                            class="h-10 w-auto object-contain"
-                        />
-                    </div>
+
 
                     <!-- Pie editorial sobre la fotografía -->
                     <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-8 text-white">
@@ -133,14 +123,12 @@ function submitLogin() {
         <!-- Columna derecha de autenticación (4 columnas en escritorio) -->
         <div class="col-span-12 lg:col-span-4 flex flex-col justify-between bg-surface px-6 py-8 sm:px-10 lg:px-12 border-l border-border">
             <!-- Barra superior con logo y selector de tema -->
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <img
-                        src="/images/gelawitto.svg"
-                        alt="Gelawitto ERP"
-                        class="h-9 w-auto object-contain rounded-lg shadow-xs"
-                    />
-                </div>
+            <div class="flex items-center justify-between gap-4">
+                <img
+                    src="/images/gelawitto.svg"
+                    alt="Gelawitto ERP"
+                    class="h-10 w-auto object-contain rounded-xl"
+                />
 
                 <button
                     type="button"
@@ -156,17 +144,10 @@ function submitLogin() {
 
             <!-- Formulario central -->
             <div class="w-full max-w-md mx-auto my-auto py-8">
-                <div class="flex justify-center mb-5">
-                    <img
-                        src="/images/gelawitto2.svg"
-                        alt="Gelawitto Heladería Artesanal"
-                        class="w-24 h-auto object-contain rounded-2xl shadow-xs border border-border/30"
-                    />
-                </div>
-                <h1 class="text-2xl sm:text-3xl font-titulo font-bold text-foreground text-center mb-1.5">
+                <h1 class="text-2xl sm:text-3xl font-titulo font-bold text-foreground mb-1.5">
                     Bienvenido a Gelawitto
                 </h1>
-                <p class="text-sm text-muted-foreground text-center mb-6">
+                <p class="text-sm text-muted-foreground mb-6">
                     Inicia sesión para acceder al sistema de planificación y control interno
                 </p>
 
