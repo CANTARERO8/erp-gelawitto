@@ -10,6 +10,7 @@ Registro cronológico de aportaciones, aprendizaje y trazabilidad técnica del e
 | 2026-10-14 | Moises Zelaya | Guía A1: Colores Fresa | PR #2 | Definí la paleta en Tailwind, cargué las tipografías, armé la página de colores y la prueba automática | Variables CSS, iteración con map y pruebas unitarias con Vitest |
 | 2026-10-14 | Eduardo Cantarero | Guía 00: Preparación | — | Instalé herramientas, configuré entorno y mejoré documentación general | Flujo de colaboración en Git, configuración de entorno y estándares editoriales de documentación |
 | 2026-10-19 | Eduardo Cantarero | Inicialización ERP Gelawitto | — | Estructuración del proyecto desde cero, directrices de colaboración, guía de instalación y configuración de repositorio | Organización de repositorios para trabajo colaborativo y flujos de integración continua |
+| 2026-10-19 | Eduardo Cantarero | Sistema Integral Gelawitto ERP | — | Implementé el modelo relacional en PostgreSQL 16, autenticación y seguridad, interfaces operativas por módulo (Catálogos, Compras, Inventario, Producción, Ventas, Finanzas) y suite de pruebas automatizadas | Modelado relacional para heladería artesanal, control transaccional de inventarios, gestión de lotes y desarrollo de interfaces con componentes reactivos |
 
 ## Guía de Registro para Colaboradores
 
