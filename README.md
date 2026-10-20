@@ -6,20 +6,32 @@ Construido bajo una arquitectura empresarial modular en capas con **Laravel**, *
 
 ---
 
+## Equipo de Desarrollo
+
+| Integrante | No. Carnet | Función Principal |
+| :--- | :--- | :--- |
+| **Eduardo Josué Córdova Cantarero** | `2021-0069I` | Arquitectura de Software y Backend Lead |
+| **Richard Alexander Malespín Tinoco** | `2022-0323I` | Desarrollo de Módulos y Base de Datos |
+| **Marlyng Elizabeth Miranda Navarrete** | `2022-0315I` | Desarrollo de Módulos e Integración |
+| **Moisés Abraham Zelaya Maldonado** | `2022-0225I` | Desarrollo Frontend y Experiencia de Usuario |
+
+---
+
 ## Tabla de Contenidos
 
-1. [Arquitectura y Stack Tecnológico](#1-arquitectura-y-stack-tecnológico)
-2. [Identidad Visual y Paleta de Colores](#2-identidad-visual-y-paleta-de-colores)
-3. [Módulos Integrados del ERP](#3-módulos-integrados-del-erp)
-4. [Requisitos Previos del Sistema](#4-requisitos-previos-del-sistema)
-5. [Guía de Instalación Paso a Paso (Desde Cero)](#5-guía-de-instalación-paso-a-paso-desde-cero)
-6. [Guía Completa de Base de Datos: Inspección, Enlace y Clientes Visuales](#6-guía-completa-de-base-de-datos-inspección-enlace-y-clientes-visuales)
-7. [Diccionario de Tablas del Esquema Relacional](#7-diccionario-de-tablas-del-esquema-relacional)
-8. [Credenciales de Acceso al ERP](#8-credenciales-de-acceso-al-erp)
-9. [Ejecución de Pruebas Automatizadas](#9-ejecución-de-pruebas-automatizadas)
-10. [Solución de Problemas Frecuentes (Troubleshooting)](#10-solución-de-problemas-frecuentes-troubleshooting)
-11. [Guía de Colaboración y Flujo de Trabajo en Git](#11-guía-de-colaboración-y-flujo-de-trabajo-en-git)
-12. [Estructura Detallada de Archivos y Capas del Proyecto](#12-estructura-detallada-de-archivos-y-capas-del-proyecto)
+1. [Equipo de Desarrollo](#equipo-de-desarrollo)
+2. [Arquitectura y Stack Tecnológico](#1-arquitectura-y-stack-tecnológico)
+3. [Identidad Visual y Paleta de Colores](#2-identidad-visual-y-paleta-de-colores)
+4. [Módulos Integrados del ERP](#3-módulos-integrados-del-erp)
+5. [Requisitos Previos del Sistema](#4-requisitos-previos-del-sistema)
+6. [Guía de Instalación Paso a Paso (Desde Cero)](#5-guía-de-instalación-paso-a-paso-desde-cero)
+7. [Guía Completa de Base de Datos: Inspección, Enlace y Clientes Visuales](#6-guía-completa-de-base-de-datos-inspección-enlace-y-clientes-visuales)
+8. [Diccionario de Tablas del Esquema Relacional](#7-diccionario-de-tablas-del-esquema-relacional)
+9. [Credenciales de Acceso al ERP](#8-credenciales-de-acceso-al-erp)
+10. [Ejecución de Pruebas Automatizadas](#9-ejecución-de-pruebas-automatizadas)
+11. [Solución de Problemas Frecuentes (Troubleshooting)](#10-solución-de-problemas-frecuentes-troubleshooting)
+12. [Guía de Colaboración y Flujo de Trabajo en Git](#11-guía-de-colaboración-y-flujo-de-trabajo-en-git)
+13. [Estructura Detallada de Archivos y Capas del Proyecto](#12-estructura-detallada-de-archivos-y-capas-del-proyecto)
 
 ---
 
