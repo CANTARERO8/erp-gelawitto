@@ -16,7 +16,6 @@ class StoreLoteRequest extends FormRequest
         return [
             'receta_id' => ['required', 'exists:recetas,id'],
             'cantidad_programada' => ['required', 'numeric', 'min:1'],
-            'cantidad_obtenida' => ['required', 'numeric', 'min:0.5'],
             'notas' => ['nullable', 'string', 'max:255'],
         ];
     }

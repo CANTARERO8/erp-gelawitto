@@ -585,5 +585,7 @@ class DatabaseSeeder extends Seeder
                 'created_at' => now()->subHours(6),
             ],
         ]);
+
+        $this->call(GelawittoBomSeeder::class);
     }
 }

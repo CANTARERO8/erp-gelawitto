@@ -21,6 +21,11 @@ class ComprasRepository
         return sprintf('OC-2026-%04d', $consecutivo);
     }
 
+    public function findOrdenForUpdate(int $id): OrdenCompra
+    {
+        return OrdenCompra::whereKey($id)->lockForUpdate()->firstOrFail();
+    }
+
     public function createOrden(array $ordenData, array $lineaData): OrdenCompra
     {
         $orden = OrdenCompra::create($ordenData);

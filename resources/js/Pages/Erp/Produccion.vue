@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { reactive, ref } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
 const props = defineProps<{
@@ -29,10 +30,10 @@ const props = defineProps<{
         operador_nombre: string;
         fecha_produccion: string;
         cantidad_programada: string;
-        cantidad_obtenida: string;
+        cantidad_obtenida: string | null;
         merma: string;
-        costo_total_lote: string;
-        costo_unitario_resultante: string;
+        costo_total_lote: string | null;
+        costo_unitario_resultante: string | null;
         estado: string;
         notas: string;
     }>;
@@ -41,14 +42,29 @@ const props = defineProps<{
 const form = useForm({
     receta_id: props.recetas[0]?.id ?? 1,
     cantidad_programada: '10',
-    cantidad_obtenida: '9.8',
     notas: '',
 });
 
-function ejecutarLote() {
+// Cantidad obtenida que el operador captura al ejecutar cada orden, indexada por id de lote.
+const obtenidoEjecucion = reactive<Record<number, string>>({});
+const ejecutandoId = ref<number | null>(null);
+
+function programarLote() {
     form.post('/produccion/lotes', {
         onSuccess: () => form.reset('notas'),
     });
+}
+
+function ejecutarLote(lote: { id: number; cantidad_programada: string }) {
+    router.post(
+        `/produccion/lotes/${lote.id}/ejecutar`,
+        { cantidad_obtenida: obtenidoEjecucion[lote.id] ?? lote.cantidad_programada },
+        {
+            preserveScroll: true,
+            onStart: () => (ejecutandoId.value = lote.id),
+            onFinish: () => (ejecutandoId.value = null),
+        }
+    );
 }
 </script>
 
@@ -57,17 +73,17 @@ function ejecutarLote() {
 
     <ErpLayout
         title="Formulación y Producción por Lotes"
-        subtitle="Fichas técnicas de heladería, descuento transaccional de insumos y costeo real por lote"
+        subtitle="Órdenes de producción programadas, ejecución con descuento transaccional de insumos y costeo real por lote"
     >
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Formulario de ejecución de lote -->
+            <!-- Paso 1: programar orden de producción -->
             <section class="lg:col-span-4 rounded-lg bg-surface border border-border p-5 h-fit">
-                <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Procesar Nuevo Lote</h2>
+                <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Programar Orden de Producción</h2>
                 <p class="text-xs text-muted-foreground mb-4">
-                    Descuenta automáticamente los insumos de la receta e ingresa el helado terminado al Kardex
+                    Planifica el lote. Los insumos se descuentan y el producto entra al Kardex al ejecutarlo
                 </p>
 
-                <form @submit.prevent="ejecutarLote" class="space-y-3.5">
+                <form @submit.prevent="programarLote" class="space-y-3.5">
                     <div>
                         <label class="block text-xs font-semibold mb-1">Fórmula Maestra</label>
                         <select
@@ -81,37 +97,24 @@ function ejecutarLote() {
                         <p v-if="form.errors.receta_id" class="text-xs text-estado-rojo-texto mt-1">{{ form.errors.receta_id }}</p>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold mb-1">Meta Programada (uds)</label>
-                            <input
-                                v-model="form.cantidad_programada"
-                                type="number"
-                                step="0.5"
-                                min="1"
-                                required
-                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold mb-1">Obtenido Real (uds)</label>
-                            <input
-                                v-model="form.cantidad_obtenida"
-                                type="number"
-                                step="0.1"
-                                min="0.5"
-                                required
-                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-                            />
-                        </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Meta Programada (uds)</label>
+                        <input
+                            v-model="form.cantidad_programada"
+                            type="number"
+                            step="0.5"
+                            min="1"
+                            required
+                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                        />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold mb-1">Notas de Planta y Mantecación</label>
+                        <label class="block text-xs font-semibold mb-1">Notas de la Orden</label>
                         <input
                             v-model="form.notas"
                             type="text"
-                            placeholder="Temperatura de salida, overrun y textura"
+                            placeholder="Turno, equipo o indicaciones de planta"
                             class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
                         />
                     </div>
@@ -121,7 +124,7 @@ function ejecutarLote() {
                         :disabled="form.processing"
                         class="w-full h-10 rounded-lg bg-fresa hover:bg-frambuesa text-white text-xs font-semibold transition-colors cursor-pointer"
                     >
-                        Ejecutar Lote y Actualizar Inventario
+                        Programar Orden
                     </button>
                 </form>
             </section>
@@ -173,18 +176,20 @@ function ejecutarLote() {
             </section>
         </div>
 
-        <!-- Historial de lotes producidos -->
+        <!-- Órdenes de producción: programadas y ejecutadas -->
         <section class="rounded-lg bg-surface border border-border overflow-hidden">
             <div class="px-5 py-4 border-b border-border">
-                <h2 class="text-base font-titulo font-semibold text-foreground">Historial de Lotes de Producción</h2>
-                <p class="text-xs text-muted-foreground">Registro de órdenes de planta, mermas de proceso y costo unitario resultante</p>
+                <h2 class="text-base font-titulo font-semibold text-foreground">Órdenes de Producción</h2>
+                <p class="text-xs text-muted-foreground">
+                    Las órdenes programadas se ejecutan al terminar el lote: ahí se descuentan los insumos y se registra la merma
+                </p>
             </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
                         <tr class="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
-                            <th class="py-3 px-4 font-semibold">Lote</th>
+                            <th class="py-3 px-4 font-semibold">Orden</th>
                             <th class="py-3 px-4 font-semibold">Fecha</th>
                             <th class="py-3 px-4 font-semibold">Producto</th>
                             <th class="py-3 px-4 font-semibold text-right">Programado</th>
@@ -192,7 +197,8 @@ function ejecutarLote() {
                             <th class="py-3 px-4 font-semibold text-right">Merma</th>
                             <th class="py-3 px-4 font-semibold text-right">Costo Lote</th>
                             <th class="py-3 px-4 font-semibold text-right">Costo Unitario</th>
-                            <th class="py-3 px-4 font-semibold">Maestro Heladero</th>
+                            <th class="py-3 px-4 font-semibold">Estado</th>
+                            <th class="py-3 px-4 font-semibold">Ejecución</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border">
@@ -204,11 +210,56 @@ function ejecutarLote() {
                                 <p class="text-xs text-muted-foreground">{{ l.notas }}</p>
                             </td>
                             <td class="py-3 px-4 text-right">{{ Number(l.cantidad_programada).toFixed(1) }}</td>
-                            <td class="py-3 px-4 text-right font-semibold">{{ Number(l.cantidad_obtenida).toFixed(1) }}</td>
-                            <td class="py-3 px-4 text-right text-estado-rojo-texto">{{ Number(l.merma).toFixed(2) }}</td>
-                            <td class="py-3 px-4 text-right">${{ Number(l.costo_total_lote).toFixed(2) }}</td>
-                            <td class="py-3 px-4 text-right font-semibold">${{ Number(l.costo_unitario_resultante).toFixed(2) }}</td>
-                            <td class="py-3 px-4 text-xs text-muted-foreground">{{ l.operador_nombre }}</td>
+
+                            <template v-if="l.estado === 'Programada'">
+                                <td class="py-3 px-4 text-right text-muted-foreground">—</td>
+                                <td class="py-3 px-4 text-right text-muted-foreground">—</td>
+                                <td class="py-3 px-4 text-right text-muted-foreground">—</td>
+                                <td class="py-3 px-4 text-right text-muted-foreground">—</td>
+                            </template>
+                            <template v-else>
+                                <td class="py-3 px-4 text-right font-semibold">{{ Number(l.cantidad_obtenida).toFixed(1) }}</td>
+                                <td class="py-3 px-4 text-right text-estado-rojo-texto">{{ Number(l.merma).toFixed(2) }}</td>
+                                <td class="py-3 px-4 text-right">${{ Number(l.costo_total_lote).toFixed(2) }}</td>
+                                <td class="py-3 px-4 text-right font-semibold">${{ Number(l.costo_unitario_resultante).toFixed(2) }}</td>
+                            </template>
+
+                            <td class="py-3 px-4">
+                                <span
+                                    v-if="l.estado === 'Programada'"
+                                    class="px-2.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800"
+                                >
+                                    {{ l.estado }}
+                                </span>
+                                <span
+                                    v-else
+                                    class="px-2.5 py-0.5 rounded text-xs font-semibold bg-estado-verde text-estado-verde-texto"
+                                >
+                                    {{ l.estado }}
+                                </span>
+                            </td>
+
+                            <td class="py-3 px-4">
+                                <div v-if="l.estado === 'Programada'" class="flex flex-col gap-1.5">
+                                    <input
+                                        v-model="obtenidoEjecucion[l.id]"
+                                        type="number"
+                                        step="0.1"
+                                        min="0.5"
+                                        :placeholder="`Obtenido (meta ${Number(l.cantidad_programada).toFixed(1)})`"
+                                        class="h-8 px-2 rounded-md border border-input bg-background text-xs"
+                                    />
+                                    <button
+                                        type="button"
+                                        :disabled="ejecutandoId === l.id"
+                                        @click="ejecutarLote(l)"
+                                        class="h-8 px-2 rounded-md bg-fresa hover:bg-frambuesa text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60"
+                                    >
+                                        Ejecutar lote
+                                    </button>
+                                </div>
+                                <span v-else class="text-xs text-muted-foreground">{{ l.operador_nombre }}</span>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Produccion;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Produccion\EjecutarLoteRequest;
 use App\Http\Requests\Produccion\StoreLoteRequest;
 use App\Http\Resources\Produccion\LoteResource;
 use App\Http\Resources\Produccion\RecetaResource;
+use App\Models\Produccion\LoteProduccion;
 use App\Repositories\Produccion\ProduccionRepository;
 use App\Services\Produccion\ProduccionService;
 use Illuminate\Http\RedirectResponse;
@@ -29,12 +31,24 @@ class ProduccionController extends Controller
 
     public function store(StoreLoteRequest $request): RedirectResponse
     {
-        $this->produccionService->registrarLote(
+        $this->produccionService->programarLote(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Lote de producción procesado: insumos descontados y producto terminado ingresado al Kardex.');
+        return back()->with('success', 'Orden de producción programada. Los insumos se descontarán al ejecutarla.');
+    }
+
+    public function ejecutar(EjecutarLoteRequest $request, LoteProduccion $lote): RedirectResponse
+    {
+        $this->produccionService->ejecutarLote(
+            $lote,
+            $request->validated(),
+            $request->user()->id,
+            $request->ip()
+        );
+
+        return back()->with('success', 'Lote ejecutado: insumos descontados y producto terminado ingresado al Kardex.');
     }
 }

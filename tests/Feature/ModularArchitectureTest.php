@@ -8,6 +8,7 @@ use App\Models\Catalogos\Proveedor;
 use App\Models\Catalogos\Cliente;
 use App\Models\Catalogos\UnidadMedida;
 use App\Models\Finanzas\FinanzasMovimiento;
+use App\Models\Produccion\LoteProduccion;
 use App\Models\Produccion\Receta;
 use App\Models\User;
 use App\Models\Ventas\CajaTurno;
@@ -168,17 +169,26 @@ class ModularArchitectureTest extends TestCase
         $costoUnitarioCompra = 2.50;
         $subtotal = round($cantidadComprada * $costoUnitarioCompra, 2);
 
-        $response = $this->actingAs($this->adminUser)->post('/compras', [
+        // Paso 1: la orden de compra no mueve stock ni finanzas.
+        $this->actingAs($this->adminUser)->post('/compras', [
             'proveedor_id' => $proveedor->id,
             'insumo_id' => $insumo->id,
             'cantidad' => $cantidadComprada,
             'costo_unitario' => $costoUnitarioCompra,
-            'modalidad_pago' => 'Pagado',
             'notas' => 'Prueba compra modular',
-        ]);
+        ])->assertSessionHasNoErrors();
 
-        $response->assertSessionHasNoErrors();
+        $orden = \App\Models\Compras\OrdenCompra::latest('id')->firstOrFail();
+        $this->assertEquals('Pendiente', $orden->estado);
+        $this->assertEquals($stockInicial, (float) $insumo->fresh()->stock_actual);
+
+        // Paso 2: la recepción en almacén incrementa stock, Kardex y finanzas.
+        $this->actingAs($this->adminUser)->post("/compras/{$orden->id}/recibir", [
+            'modalidad_pago' => 'Pagado',
+        ])->assertSessionHasNoErrors();
+
         $insumo->refresh();
+        $this->assertEquals('Recibida', $orden->fresh()->estado);
 
         $nuevoStockEsperado = round($stockInicial + $cantidadComprada, 3);
         $nuevoCostoPromedioEsperado = round((($stockInicial * $costoInicial) + $subtotal) / $nuevoStockEsperado, 2);
@@ -233,29 +243,41 @@ class ModularArchitectureTest extends TestCase
         $producto = $receta->producto;
         $stockProdInicial = (float) $producto->stock_actual;
 
-        $response = $this->actingAs($this->adminUser)->post('/produccion/lotes', [
+        // Paso 1: programar la orden no mueve producto ni insumos.
+        $this->actingAs($this->adminUser)->post('/produccion/lotes', [
             'receta_id' => $receta->id,
             'cantidad_programada' => 10,
-            'cantidad_obtenida' => 9.8,
             'notas' => 'Producción de lote de prueba modular',
-        ]);
+        ])->assertSessionHasNoErrors();
 
-        $response->assertSessionHasNoErrors();
+        $lote = LoteProduccion::latest('id')->firstOrFail();
+        $this->assertEquals('Programada', $lote->estado);
+        $this->assertEquals($stockProdInicial, (float) $producto->fresh()->stock_actual);
+
+        // Paso 2: ejecutar la orden descuenta insumos e ingresa el producto.
+        $this->actingAs($this->adminUser)->post("/produccion/lotes/{$lote->id}/ejecutar", [
+            'cantidad_obtenida' => 9.8,
+            'notas' => 'Ejecución de prueba',
+        ])->assertSessionHasNoErrors();
+
         $producto->refresh();
         $this->assertEquals(round($stockProdInicial + 9.8, 3), (float) $producto->stock_actual);
         $this->assertDatabaseHas('lotes_produccion', [
-            'receta_id' => $receta->id,
+            'id' => $lote->id,
             'estado' => 'Finalizado',
         ]);
 
-        // Attempt huge batch that exceeds raw material stock
-        $hugeBatchResponse = $this->actingAs($this->adminUser)->post('/produccion/lotes', [
+        // Una orden programada con insumos insuficientes se puede crear, pero no ejecutar.
+        $this->actingAs($this->adminUser)->post('/produccion/lotes', [
             'receta_id' => $receta->id,
             'cantidad_programada' => 100000,
-            'cantidad_obtenida' => 100000,
             'notas' => 'Lote imposible por falta de insumos',
-        ]);
-        $hugeBatchResponse->assertSessionHasErrors('receta_id');
+        ])->assertSessionHasNoErrors();
+
+        $loteImposible = LoteProduccion::latest('id')->firstOrFail();
+        $this->actingAs($this->adminUser)->post("/produccion/lotes/{$loteImposible->id}/ejecutar", [
+            'cantidad_obtenida' => 100000,
+        ])->assertSessionHasErrors('cantidad_obtenida');
     }
 
     public function test_ventas_module_opens_shift_processes_sale_and_closes_shift(): void

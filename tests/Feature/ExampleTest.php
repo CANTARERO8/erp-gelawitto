@@ -46,14 +46,16 @@ class ExampleTest extends TestCase
         $receta = DB::table('recetas')->first();
         $productoAntes = DB::table('productos')->where('id', $receta->producto_id)->first();
 
-        $response = $this->actingAs($user)->post('/produccion/lotes', [
+        $this->actingAs($user)->post('/produccion/lotes', [
             'receta_id' => $receta->id,
             'cantidad_programada' => 10,
-            'cantidad_obtenida' => 9.5,
             'notas' => 'Lote de prueba automatizada',
-        ]);
+        ])->assertSessionHasNoErrors();
 
-        $response->assertSessionHasNoErrors();
+        $lote = DB::table('lotes_produccion')->orderByDesc('id')->firstOrFail();
+        $this->actingAs($user)->post("/produccion/lotes/{$lote->id}/ejecutar", [
+            'cantidad_obtenida' => 9.5,
+        ])->assertSessionHasNoErrors();
 
         $productoDespues = DB::table('productos')->where('id', $receta->producto_id)->first();
         $this->assertEquals(

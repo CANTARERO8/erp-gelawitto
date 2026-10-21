@@ -19,7 +19,10 @@ class ProduccionService
         protected SeguridadService $seguridadService
     ) {}
 
-    public function registrarLote(array $data, int $actorId, ?string $ip): LoteProduccion
+    /**
+     * Paso 1: programa la orden de producción. No descuenta insumos ni suma producto.
+     */
+    public function programarLote(array $data, int $actorId, ?string $ip): LoteProduccion
     {
         return DB::transaction(function () use ($data, $actorId, $ip) {
             $receta = $this->produccionRepository->findReceta((int) $data['receta_id']);
@@ -28,14 +31,60 @@ class ProduccionService
                 throw ValidationException::withMessages(['receta_id' => 'La receta seleccionada no existe.']);
             }
 
+            $codigoLote = $this->produccionRepository->getNextCodigoLote();
+
+            $lote = $this->produccionRepository->createLote([
+                'codigo_lote' => $codigoLote,
+                'receta_id' => $receta->id,
+                'producto_id' => $receta->producto_id,
+                'user_id' => $actorId,
+                'fecha_produccion' => now()->toDateString(),
+                'cantidad_programada' => $data['cantidad_programada'],
+                'cantidad_obtenida' => null,
+                'merma' => 0,
+                'costo_total_lote' => null,
+                'costo_unitario_resultante' => null,
+                'estado' => 'Programada',
+                'notas' => $data['notas'] ?? 'Orden de producción programada.',
+            ]);
+
+            $this->seguridadService->registrarAuditoria(
+                $actorId,
+                'Producción',
+                'Alta de Orden de Producción',
+                "Orden {$codigoLote} programada: {$data['cantidad_programada']} uds de {$receta->nombre}. Insumos pendientes de descuento.",
+                $ip
+            );
+
+            return $lote;
+        });
+    }
+
+    /**
+     * Paso 2: ejecuta una orden programada. Aquí se descuentan los insumos de la receta,
+     * se calcula el costo y la merma, y el producto terminado entra al Kardex.
+     */
+    public function ejecutarLote(LoteProduccion $lote, array $data, int $actorId, ?string $ip): LoteProduccion
+    {
+        return DB::transaction(function () use ($lote, $data, $actorId, $ip) {
+            $loteBloqueado = $this->produccionRepository->findLoteForUpdate($lote->id);
+
+            if ($loteBloqueado->estado !== 'Programada') {
+                throw ValidationException::withMessages([
+                    'orden' => "La orden {$loteBloqueado->codigo_lote} ya fue {$loteBloqueado->estado}.",
+                ]);
+            }
+
+            $receta = $this->produccionRepository->findReceta((int) $loteBloqueado->receta_id);
+
             $producto = $this->catalogosRepository->findProductoForUpdate($receta->producto_id);
 
             if (! $producto) {
-                throw ValidationException::withMessages(['receta_id' => 'El producto asociado a la receta no existe.']);
+                throw ValidationException::withMessages(['cantidad_obtenida' => 'El producto asociado a la receta no existe.']);
             }
 
-            $factorEscala = (float) $data['cantidad_programada'] / (float) $receta->rendimiento_unidades;
-            $codigoLote = $this->produccionRepository->getNextCodigoLote();
+            $codigoLote = $loteBloqueado->codigo_lote;
+            $factorEscala = (float) $loteBloqueado->cantidad_programada / (float) $receta->rendimiento_unidades;
             $costoTotalLote = 0.0;
 
             foreach ($receta->ingredientes as $ing) {
@@ -46,7 +95,7 @@ class ProduccionService
                     $disponible = $insumo ? $insumo->stock_actual : 0;
                     $nombre = $insumo ? $insumo->nombre : 'Insumo #'.$ing->insumo_id;
                     throw ValidationException::withMessages([
-                        'receta_id' => "Insumo insuficiente: {$nombre} requiere {$requerido} pero hay {$disponible}.",
+                        'cantidad_obtenida' => "Insumo insuficiente: {$nombre} requiere {$requerido} pero hay {$disponible}.",
                     ]);
                 }
 
@@ -71,27 +120,26 @@ class ProduccionService
 
             $costoTotalLote = round($costoTotalLote, 2);
             $costoUnitarioResultante = round($costoTotalLote / (float) $data['cantidad_obtenida'], 2);
-            $merma = max(0, round((float) $data['cantidad_programada'] - (float) $data['cantidad_obtenida'], 3));
+            $merma = max(0, round((float) $loteBloqueado->cantidad_programada - (float) $data['cantidad_obtenida'], 3));
 
-            $lote = $this->produccionRepository->createLote([
-                'codigo_lote' => $codigoLote,
-                'receta_id' => $receta->id,
-                'producto_id' => $producto->id,
-                'user_id' => $actorId,
-                'fecha_produccion' => now()->toDateString(),
-                'cantidad_programada' => $data['cantidad_programada'],
+            $loteBloqueado->update([
                 'cantidad_obtenida' => $data['cantidad_obtenida'],
                 'merma' => $merma,
                 'costo_total_lote' => $costoTotalLote,
                 'costo_unitario_resultante' => $costoUnitarioResultante,
                 'estado' => 'Finalizado',
-                'notas' => $data['notas'] ?? 'Producción estándar verificada.',
+                'notas' => $this->notasEjecucion($loteBloqueado->notas, $data['notas'] ?? null),
             ]);
 
             $nuevoStockProducto = round((float) $producto->stock_actual + (float) $data['cantidad_obtenida'], 3);
+            $valorActualProducto = (float) $producto->stock_actual * (float) $producto->costo_unitario;
+            $nuevoCostoUnitarioProducto = $nuevoStockProducto > 0
+                ? round(($valorActualProducto + $costoTotalLote) / $nuevoStockProducto, 2)
+                : $costoUnitarioResultante;
+
             $producto->update([
                 'stock_actual' => $nuevoStockProducto,
-                'costo_unitario' => $costoUnitarioResultante,
+                'costo_unitario' => $nuevoCostoUnitarioProducto,
             ]);
 
             $this->inventarioRepository->registrarMovimiento([
@@ -110,12 +158,23 @@ class ProduccionService
             $this->seguridadService->registrarAuditoria(
                 $actorId,
                 'Producción',
-                'Registro de Lote',
+                'Ejecución de Lote',
                 "Lote {$codigoLote} completado: {$data['cantidad_obtenida']} uds de {$producto->nombre} (Costo unitario: \${$costoUnitarioResultante}).",
                 $ip
             );
 
-            return $lote;
+            return $loteBloqueado->fresh();
         });
+    }
+
+    private function notasEjecucion(?string $notasOrden, ?string $notasEjecucion): string
+    {
+        $base = $notasOrden ?? '';
+
+        if ($notasEjecucion === null || $notasEjecucion === '') {
+            return $base;
+        }
+
+        return trim($base.' | Ejecución: '.$notasEjecucion);
     }
 }

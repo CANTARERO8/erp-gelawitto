@@ -2,10 +2,12 @@
 
 namespace App\Models\Produccion;
 
+use App\Models\Calidad\ControlCalidad;
 use App\Models\Catalogos\Producto;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LoteProduccion extends Model
 {
@@ -23,6 +25,7 @@ class LoteProduccion extends Model
         'costo_total_lote',
         'costo_unitario_resultante',
         'estado',
+        'estado_calidad',
         'notas',
     ];
 
@@ -51,5 +54,10 @@ class LoteProduccion extends Model
     public function operador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function controles(): HasMany
+    {
+        return $this->hasMany(ControlCalidad::class, 'lote_id');
     }
 }

@@ -18,7 +18,6 @@ class StoreCompraRequest extends FormRequest
             'insumo_id' => ['required', 'exists:insumos,id'],
             'cantidad' => ['required', 'numeric', 'min:0.001'],
             'costo_unitario' => ['required', 'numeric', 'min:0.01'],
-            'modalidad_pago' => ['required', 'in:Pagado,Pendiente'],
             'notas' => ['nullable', 'string', 'max:255'],
         ];
     }

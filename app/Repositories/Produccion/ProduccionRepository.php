@@ -33,4 +33,9 @@ class ProduccionRepository
     {
         return LoteProduccion::create($data);
     }
+
+    public function findLoteForUpdate(int $id): LoteProduccion
+    {
+        return LoteProduccion::whereKey($id)->lockForUpdate()->firstOrFail();
+    }
 }

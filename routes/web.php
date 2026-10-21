@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Calidad\CalidadController;
 use App\Http\Controllers\Catalogos\CatalogosController;
 use App\Http\Controllers\Compras\ComprasController;
 use App\Http\Controllers\Dashboard\DashboardController;
@@ -29,12 +30,17 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/compras', [ComprasController::class, 'index'])->name('compras');
     Route::post('/compras', [ComprasController::class, 'store'])->name('compras.store');
+    Route::post('/compras/{orden}/recibir', [ComprasController::class, 'recibir'])->name('compras.recibir');
 
     Route::get('/inventario', [InventarioController::class, 'index'])->name('inventario');
     Route::post('/inventario/ajustes', [InventarioController::class, 'storeAjuste'])->name('inventario.ajustes.store');
 
     Route::get('/produccion', [ProduccionController::class, 'index'])->name('produccion');
     Route::post('/produccion/lotes', [ProduccionController::class, 'store'])->name('produccion.lotes.store');
+    Route::post('/produccion/lotes/{lote}/ejecutar', [ProduccionController::class, 'ejecutar'])->name('produccion.lotes.ejecutar');
+
+    Route::get('/calidad', [CalidadController::class, 'index'])->name('calidad');
+    Route::post('/calidad/lotes/{lote}/inspeccion', [CalidadController::class, 'inspeccionar'])->name('calidad.inspeccionar');
 
     Route::get('/ventas', [VentasController::class, 'index'])->name('ventas');
     Route::post('/ventas', [VentasController::class, 'store'])->name('ventas.store');
