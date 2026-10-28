@@ -5,6 +5,7 @@ namespace App\Services\Inventario;
 use App\Models\Inventario\MovimientoInventario;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Inventario\InventarioRepository;
+use App\Services\Finanzas\ContabilidadService;
 use App\Services\Seguridad\SeguridadService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,8 +15,11 @@ class InventarioService
     public function __construct(
         protected InventarioRepository $inventarioRepository,
         protected CatalogosRepository $catalogosRepository,
-        protected SeguridadService $seguridadService
-    ) {}
+        protected SeguridadService $seguridadService,
+        protected ?ContabilidadService $contabilidadService = null
+    ) {
+        $this->contabilidadService ??= app(ContabilidadService::class);
+    }
 
     public function registrarAjuste(array $data, int $actorId, ?string $ip): MovimientoInventario
     {
@@ -56,6 +60,16 @@ class InventarioService
                 'costo_unitario' => $costo,
                 'user_id' => $actorId,
             ]);
+
+            if ($esSalida) {
+                $this->contabilidadService->asentarBajaCalidadOMerma(
+                    $ref,
+                    $data['tipo_item'],
+                    round(abs($delta) * (float) $costo, 2),
+                    "{$data['tipo_movimiento']} de inventario: {$data['motivo']}",
+                    $actorId
+                );
+            }
 
             $this->seguridadService->registrarAuditoria(
                 $actorId,

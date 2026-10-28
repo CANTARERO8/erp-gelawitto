@@ -8,6 +8,7 @@ use App\Repositories\Calidad\CalidadRepository;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Inventario\InventarioRepository;
 use App\Repositories\Produccion\ProduccionRepository;
+use App\Services\Finanzas\ContabilidadService;
 use App\Services\Seguridad\SeguridadService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,8 +20,11 @@ class CalidadService
         protected ProduccionRepository $produccionRepository,
         protected CatalogosRepository $catalogosRepository,
         protected InventarioRepository $inventarioRepository,
-        protected SeguridadService $seguridadService
-    ) {}
+        protected SeguridadService $seguridadService,
+        protected ?ContabilidadService $contabilidadService = null
+    ) {
+        $this->contabilidadService ??= app(ContabilidadService::class);
+    }
 
     /**
      * Registra la inspección de un lote ejecutado y aplica su disposición:
@@ -112,6 +116,14 @@ class CalidadService
                     'user_id' => $actorId,
                 ]);
 
+                $this->contabilidadService->asentarBajaCalidadOMerma(
+                    $loteBloqueado->codigo_lote,
+                    'producto',
+                    $costoPerdido,
+                    "{$tipoMovimiento}: {$defecto}",
+                    $actorId
+                );
+
                 $estadoCalidad = $disposicion;
             }
 
@@ -134,7 +146,7 @@ class CalidadService
                 $actorId,
                 'Calidad',
                 'Inspección de Lote',
-                "Lote {$loteBloqueado->codigo_lote}: {$inspeccionadas} inspeccionadas, {$noConformes} no conformes, disposición {$disposicion}.",
+                "Lote {$loteBloqueado->codigo_lote}: {$inspeccionadas} inspeccionadas, {$noConformes} no conformes, disposición {$disposicion} (Costo perdido: C$ {$costoPerdido}).",
                 $ip
             );
 

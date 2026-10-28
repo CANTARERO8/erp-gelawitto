@@ -3,9 +3,11 @@
 namespace App\Services\Produccion;
 
 use App\Models\Produccion\LoteProduccion;
+use App\Models\Produccion\Receta;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Inventario\InventarioRepository;
 use App\Repositories\Produccion\ProduccionRepository;
+use App\Services\Finanzas\ContabilidadService;
 use App\Services\Seguridad\SeguridadService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,8 +18,35 @@ class ProduccionService
         protected ProduccionRepository $produccionRepository,
         protected CatalogosRepository $catalogosRepository,
         protected InventarioRepository $inventarioRepository,
-        protected SeguridadService $seguridadService
-    ) {}
+        protected SeguridadService $seguridadService,
+        protected ?ContabilidadService $contabilidadService = null
+    ) {
+        $this->contabilidadService ??= app(ContabilidadService::class);
+    }
+
+    public function crearReceta(array $data, int $actorId, ?string $ip): Receta
+    {
+        return DB::transaction(function () use ($data, $actorId, $ip) {
+            $receta = $this->produccionRepository->createReceta([
+                'producto_id' => $data['producto_id'],
+                'nombre' => $data['nombre'],
+                'rendimiento_unidades' => $data['rendimiento_unidades'],
+                'tiempo_preparacion_min' => $data['tiempo_preparacion_min'],
+                'instrucciones' => $data['instrucciones'] ?? 'Fórmula técnica estándar de planta.',
+                'activa' => true,
+            ], $data['ingredientes']);
+
+            $this->seguridadService->registrarAuditoria(
+                $actorId,
+                'Producción',
+                'Alta de Receta Técnica',
+                "Se creó la fórmula '{$receta->nombre}' con ".count($data['ingredientes']).' ingredientes.',
+                $ip
+            );
+
+            return $receta;
+        });
+    }
 
     /**
      * Paso 1: programa la orden de producción. No descuenta insumos ni suma producto.
@@ -155,11 +184,18 @@ class ProduccionService
                 'user_id' => $actorId,
             ]);
 
+            $this->contabilidadService->asentarLoteProduccion(
+                $codigoLote,
+                $costoTotalLote,
+                $producto->nombre,
+                $actorId
+            );
+
             $this->seguridadService->registrarAuditoria(
                 $actorId,
                 'Producción',
                 'Ejecución de Lote',
-                "Lote {$codigoLote} completado: {$data['cantidad_obtenida']} uds de {$producto->nombre} (Costo unitario: \${$costoUnitarioResultante}).",
+                "Lote {$codigoLote} completado: {$data['cantidad_obtenida']} uds de {$producto->nombre} (Costo unitario: C$ {$costoUnitarioResultante}).",
                 $ip
             );
 
