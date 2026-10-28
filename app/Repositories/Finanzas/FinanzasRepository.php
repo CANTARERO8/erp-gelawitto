@@ -14,7 +14,16 @@ class FinanzasRepository
 
     public function getCuentasPorPagarTotal(): float
     {
-        return (float) FinanzasMovimiento::where('estado', 'Pendiente')->sum('monto');
+        return (float) FinanzasMovimiento::whereIn('tipo', ['Cuenta por Pagar', 'Egreso'])
+            ->where('estado', 'Pendiente')
+            ->sum('monto');
+    }
+
+    public function getCuentasPorCobrarTotal(): float
+    {
+        return (float) FinanzasMovimiento::where('tipo', 'Cuenta por Cobrar')
+            ->where('estado', 'Pendiente')
+            ->sum('monto');
     }
 
     public function getIngresosCobradosTotal(): float

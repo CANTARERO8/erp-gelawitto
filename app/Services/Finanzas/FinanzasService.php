@@ -12,8 +12,11 @@ class FinanzasService
 {
     public function __construct(
         protected FinanzasRepository $finanzasRepository,
-        protected SeguridadService $seguridadService
-    ) {}
+        protected SeguridadService $seguridadService,
+        protected ?ContabilidadService $contabilidadService = null
+    ) {
+        $this->contabilidadService ??= app(ContabilidadService::class);
+    }
 
     public function registrarGasto(array $data, int $actorId, ?string $ip): FinanzasMovimiento
     {
@@ -33,11 +36,19 @@ class FinanzasService
                 'user_id' => $actorId,
             ]);
 
+            $this->contabilidadService->asentarGastoOperativo(
+                $folio,
+                $data['concepto'],
+                (float) $data['monto'],
+                $data['estado'],
+                $actorId
+            );
+
             $this->seguridadService->registrarAuditoria(
                 $actorId,
                 'Finanzas',
                 'Registro de Egreso',
-                "Folio {$folio}: {$data['concepto']} por \${$data['monto']}.",
+                "Folio {$folio}: {$data['concepto']} por C$ {$data['monto']}.",
                 $ip
             );
 
@@ -58,16 +69,28 @@ class FinanzasService
                 throw ValidationException::withMessages(['id' => 'El movimiento ya no se encuentra pendiente de liquidación.']);
             }
 
+            $tipoOriginal = $mov->tipo;
+            $nuevoTipo = $tipoOriginal === 'Cuenta por Cobrar' ? 'Ingreso' : 'Egreso';
+
             $mov->update([
-                'tipo' => 'Egreso',
+                'tipo' => $nuevoTipo,
                 'estado' => 'Pagado',
             ]);
+
+            $this->contabilidadService->asentarLiquidacionCuenta(
+                $mov->folio,
+                $tipoOriginal,
+                (float) $mov->monto,
+                $actorId
+            );
+
+            $etiqueta = $tipoOriginal === 'Cuenta por Cobrar' ? 'cuenta por cobrar' : 'cuenta por pagar';
 
             $this->seguridadService->registrarAuditoria(
                 $actorId,
                 'Finanzas',
                 'Liquidación de Cuenta',
-                "Se liquidó la cuenta por pagar {$mov->folio} (\${$mov->monto}).",
+                "Se liquidó la {$etiqueta} {$mov->folio} (C$ {$mov->monto}).",
                 $ip
             );
 

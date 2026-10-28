@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Finanzas\StoreGastoRequest;
 use App\Http\Resources\Finanzas\FinanzasMovimientoResource;
 use App\Repositories\Finanzas\FinanzasRepository;
+use App\Services\Finanzas\ContabilidadService;
 use App\Services\Finanzas\FinanzasService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,8 @@ class FinanzasController extends Controller
 {
     public function __construct(
         protected FinanzasRepository $finanzasRepository,
-        protected FinanzasService $finanzasService
+        protected FinanzasService $finanzasService,
+        protected ContabilidadService $contabilidadService
     ) {}
 
     public function index(): Response
@@ -24,6 +26,7 @@ class FinanzasController extends Controller
         $ingresos = $this->finanzasRepository->getIngresosCobradosTotal();
         $egresos = $this->finanzasRepository->getEgresosPagadosTotal();
         $cuentasPorPagar = $this->finanzasRepository->getCuentasPorPagarTotal();
+        $cuentasPorCobrar = $this->finanzasRepository->getCuentasPorCobrarTotal();
 
         return Inertia::render('Erp/Finanzas', [
             'movimientos' => FinanzasMovimientoResource::collection($this->finanzasRepository->getMovimientos())->resolve(),
@@ -33,6 +36,8 @@ class FinanzasController extends Controller
                 'flujo_neto' => round($ingresos - $egresos, 2),
                 'cuentas_por_pagar' => round($cuentasPorPagar, 2),
             ],
+            'cuentas_por_cobrar' => round($cuentasPorCobrar, 2),
+            'contabilidad' => $this->contabilidadService->obtenerEstadosFinancieros(),
         ]);
     }
 
@@ -55,6 +60,6 @@ class FinanzasController extends Controller
             $request->ip()
         );
 
-        return back()->with('success', 'Cuenta por pagar liquidada y asentada como egreso pagado.');
+        return back()->with('success', 'Cuenta liquidada y asentada en Libro Diario.');
     }
 }
