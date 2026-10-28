@@ -176,7 +176,7 @@ function registrarAjuste() {
                                 <td class="py-3 px-4 text-right font-semibold">{{ Number(ins.stock_actual).toFixed(2) }} {{ ins.unidad }}</td>
                                 <td class="py-3 px-4 text-right text-xs text-muted-foreground">{{ Number(ins.stock_minimo).toFixed(1) }} {{ ins.unidad }}</td>
                                 <td class="py-3 px-4 text-right font-medium">
-                                    ${{ (Number(ins.stock_actual) * Number(ins.costo_promedio)).toFixed(2) }}
+                                    C$ {{ (Number(ins.stock_actual) * Number(ins.costo_promedio)).toFixed(2) }}
                                 </td>
                                 <td class="py-3 px-4">
                                     <span
@@ -231,7 +231,7 @@ function registrarAjuste() {
                                 {{ Number(k.cantidad) >= 0 ? '+' : '' }}{{ Number(k.cantidad).toFixed(3) }}
                             </td>
                             <td class="py-3 px-4 text-right font-semibold">{{ Number(k.stock_resultante).toFixed(3) }}</td>
-                            <td class="py-3 px-4 text-right text-xs">${{ Number(k.costo_unitario).toFixed(2) }}</td>
+                            <td class="py-3 px-4 text-right text-xs">C$ {{ Number(k.costo_unitario).toFixed(2) }}</td>
                             <td class="py-3 px-4 text-xs text-muted-foreground">{{ k.responsable }}</td>
                         </tr>
                     </tbody>

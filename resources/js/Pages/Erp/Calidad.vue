@@ -246,7 +246,7 @@ function claseDisposicion(disposicion: string): string {
                                         </p>
                                         <p v-if="c.defecto" class="text-muted-foreground">{{ c.defecto }}</p>
                                         <p v-if="Number(c.costo_perdido) > 0" class="text-estado-rojo-texto">
-                                            Costo perdido: ${{ Number(c.costo_perdido).toFixed(2) }}
+                                            Costo perdido: C$ {{ Number(c.costo_perdido).toFixed(2) }}
                                         </p>
                                     </div>
                                 </td>

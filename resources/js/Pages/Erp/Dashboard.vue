@@ -44,7 +44,7 @@ defineProps<{
 }>();
 
 function money(val: number | string): string {
-    return new Intl.NumberFormat('es-NI', { style: 'currency', currency: 'USD' }).format(Number(val));
+    return 'C$ ' + new Intl.NumberFormat('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(val));
 }
 </script>
 
