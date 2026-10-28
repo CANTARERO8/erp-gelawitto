@@ -66,6 +66,21 @@ class CatalogosRepository
         return Insumo::create($data);
     }
 
+    public function createProveedor(array $data): Proveedor
+    {
+        return Proveedor::create($data);
+    }
+
+    public function createCliente(array $data): Cliente
+    {
+        return Cliente::create($data);
+    }
+
+    public function findCliente(int $id): ?Cliente
+    {
+        return Cliente::find($id);
+    }
+
     public function findProducto(int $id): ?Producto
     {
         return Producto::find($id);

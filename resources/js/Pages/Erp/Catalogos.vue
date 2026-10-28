@@ -55,8 +55,8 @@ const formProducto = useForm({
     nombre: '',
     sabor: 'Fresa',
     presentacion: 'Tina 1 Litro',
-    precio_venta: '15.00',
-    costo_unitario: '5.50',
+    precio_venta: '530.00',
+    costo_unitario: '195.00',
     stock_minimo: '8',
 });
 
@@ -66,7 +66,24 @@ const formInsumo = useForm({
     categoria: 'Lácteos',
     unidad_id: props.unidades[0]?.id ?? 1,
     stock_minimo: '15',
-    costo_promedio: '2.50',
+    costo_promedio: '65.00',
+});
+
+const formProveedor = useForm({
+    nombre: '',
+    ruc_nit: '',
+    contacto: '',
+    telefono: '+505 ',
+    correo: '',
+    direccion: '',
+});
+
+const formCliente = useForm({
+    nombre: '',
+    identificacion: '',
+    telefono: '+505 ',
+    correo: '',
+    tipo: 'Mayorista',
 });
 
 function guardarProducto() {
@@ -80,6 +97,18 @@ function guardarInsumo() {
         onSuccess: () => formInsumo.reset('codigo', 'nombre'),
     });
 }
+
+function guardarProveedor() {
+    formProveedor.post('/catalogos/proveedores', {
+        onSuccess: () => formProveedor.reset('nombre', 'ruc_nit', 'contacto', 'correo', 'direccion'),
+    });
+}
+
+function guardarCliente() {
+    formCliente.post('/catalogos/clientes', {
+        onSuccess: () => formCliente.reset('nombre', 'identificacion', 'correo'),
+    });
+}
 </script>
 
 <template>
@@ -87,7 +116,7 @@ function guardarInsumo() {
 
     <ErpLayout
         title="Catálogos Maestros"
-        subtitle="Administración centralizada de productos terminados, materia prima, proveedores y cartera de clientes"
+        subtitle="Administración centralizada de productos terminados, materia prima, proveedores y cartera de clientes en Córdobas (C$)"
     >
         <!-- Navegación por pestañas -->
         <div class="flex flex-wrap gap-2 border-b border-border pb-3">
@@ -191,7 +220,7 @@ function guardarInsumo() {
                     </div>
                     <div class="grid grid-cols-3 gap-2.5">
                         <div>
-                            <label class="block text-xs font-semibold mb-1">Precio ($)</label>
+                            <label class="block text-xs font-semibold mb-1">Precio (C$)</label>
                             <input
                                 v-model="formProducto.precio_venta"
                                 type="number"
@@ -201,7 +230,7 @@ function guardarInsumo() {
                             />
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold mb-1">Costo ($)</label>
+                            <label class="block text-xs font-semibold mb-1">Costo (C$)</label>
                             <input
                                 v-model="formProducto.costo_unitario"
                                 type="number"
@@ -252,8 +281,8 @@ function guardarInsumo() {
                                     <p class="text-xs text-muted-foreground">{{ p.presentacion }}</p>
                                 </td>
                                 <td class="py-3 px-4 text-xs font-medium">{{ p.sabor }}</td>
-                                <td class="py-3 px-4 text-right">${{ Number(p.costo_unitario).toFixed(2) }}</td>
-                                <td class="py-3 px-4 text-right font-semibold">${{ Number(p.precio_venta).toFixed(2) }}</td>
+                                <td class="py-3 px-4 text-right">C$ {{ Number(p.costo_unitario).toFixed(2) }}</td>
+                                <td class="py-3 px-4 text-right font-semibold">C$ {{ Number(p.precio_venta).toFixed(2) }}</td>
                                 <td class="py-3 px-4 text-right font-semibold">{{ Number(p.stock_actual).toFixed(1) }} uds</td>
                             </tr>
                         </tbody>
@@ -274,7 +303,7 @@ function guardarInsumo() {
                         <input
                             v-model="formInsumo.codigo"
                             type="text"
-                            placeholder="INS-009"
+                            placeholder="INS-013"
                             required
                             class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
                         />
@@ -302,6 +331,7 @@ function guardarInsumo() {
                                 <option value="Endulzantes">Endulzantes</option>
                                 <option value="Empaques">Empaques</option>
                                 <option value="Frutos Secos">Frutos Secos</option>
+                                <option value="Gelatinas">Gelatinas</option>
                             </select>
                         </div>
                         <div>
@@ -328,7 +358,7 @@ function guardarInsumo() {
                             />
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold mb-1">Costo Base ($)</label>
+                            <label class="block text-xs font-semibold mb-1">Costo Base (C$)</label>
                             <input
                                 v-model="formInsumo.costo_promedio"
                                 type="number"
@@ -365,7 +395,7 @@ function guardarInsumo() {
                                 <td class="py-3 px-4 font-mono text-xs font-semibold text-frambuesa">{{ ins.codigo }}</td>
                                 <td class="py-3 px-4 font-semibold text-foreground">{{ ins.nombre }}</td>
                                 <td class="py-3 px-4 text-xs text-muted-foreground">{{ ins.categoria }}</td>
-                                <td class="py-3 px-4 text-right">${{ Number(ins.costo_promedio).toFixed(2) }} / {{ ins.unidad }}</td>
+                                <td class="py-3 px-4 text-right">C$ {{ Number(ins.costo_promedio).toFixed(2) }} / {{ ins.unidad }}</td>
                                 <td class="py-3 px-4 text-right font-semibold">{{ Number(ins.stock_actual).toFixed(2) }} {{ ins.unidad }}</td>
                             </tr>
                         </tbody>
@@ -375,59 +405,205 @@ function guardarInsumo() {
         </div>
 
         <!-- Pestaña Proveedores -->
-        <section v-if="activeTab === 'proveedores'" class="rounded-lg bg-surface border border-border overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
-                            <th class="py-3 px-4 font-semibold">Razón Social</th>
-                            <th class="py-3 px-4 font-semibold">RUC / NIT</th>
-                            <th class="py-3 px-4 font-semibold">Contacto</th>
-                            <th class="py-3 px-4 font-semibold">Teléfono</th>
-                            <th class="py-3 px-4 font-semibold">Correo</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border">
-                        <tr v-for="pr in proveedores" :key="pr.id" class="hover:bg-muted/25">
-                            <td class="py-3 px-4 font-semibold text-foreground">{{ pr.nombre }}</td>
-                            <td class="py-3 px-4 font-mono text-xs">{{ pr.ruc_nit }}</td>
-                            <td class="py-3 px-4">{{ pr.contacto }}</td>
-                            <td class="py-3 px-4 text-xs">{{ pr.telefono }}</td>
-                            <td class="py-3 px-4 text-xs text-muted-foreground">{{ pr.correo }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+        <div v-if="activeTab === 'proveedores'" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <section class="lg:col-span-4 rounded-lg bg-surface border border-border p-5 h-fit">
+                <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Registrar Proveedor</h2>
+                <p class="text-xs text-muted-foreground mb-4">Alta de proveedor autorizado para órdenes de compra</p>
+
+                <form @submit.prevent="guardarProveedor" class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Razón Social</label>
+                        <input
+                            v-model="formProveedor.nombre"
+                            type="text"
+                            placeholder="Distribuidora Láctea Nicaragüense S.A."
+                            required
+                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                        />
+                        <p v-if="formProveedor.errors.nombre" class="text-xs text-estado-rojo-texto mt-1">{{ formProveedor.errors.nombre }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Número RUC / NIT</label>
+                        <input
+                            v-model="formProveedor.ruc_nit"
+                            type="text"
+                            placeholder="J031000099881"
+                            required
+                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                        />
+                        <p v-if="formProveedor.errors.ruc_nit" class="text-xs text-estado-rojo-texto mt-1">{{ formProveedor.errors.ruc_nit }}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Ejecutivo de Contacto</label>
+                            <input
+                                v-model="formProveedor.contacto"
+                                type="text"
+                                placeholder="Ing. Luis Pérez"
+                                required
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Teléfono</label>
+                            <input
+                                v-model="formProveedor.telefono"
+                                type="text"
+                                required
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Correo Electrónico</label>
+                        <input
+                            v-model="formProveedor.correo"
+                            type="email"
+                            placeholder="ventas@proveedor.com.ni"
+                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Dirección Fiscal</label>
+                        <input
+                            v-model="formProveedor.direccion"
+                            type="text"
+                            placeholder="Managua, Nicaragua"
+                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        :disabled="formProveedor.processing"
+                        class="w-full h-10 rounded-lg bg-fresa hover:bg-frambuesa text-white text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                        Guardar Proveedor
+                    </button>
+                </form>
+            </section>
+
+            <section class="lg:col-span-8 rounded-lg bg-surface border border-border overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
+                                <th class="py-3 px-4 font-semibold">Razón Social</th>
+                                <th class="py-3 px-4 font-semibold">RUC / NIT</th>
+                                <th class="py-3 px-4 font-semibold">Contacto</th>
+                                <th class="py-3 px-4 font-semibold">Teléfono</th>
+                                <th class="py-3 px-4 font-semibold">Correo</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            <tr v-for="pr in proveedores" :key="pr.id" class="hover:bg-muted/25">
+                                <td class="py-3 px-4 font-semibold text-foreground">{{ pr.nombre }}</td>
+                                <td class="py-3 px-4 font-mono text-xs">{{ pr.ruc_nit }}</td>
+                                <td class="py-3 px-4">{{ pr.contacto }}</td>
+                                <td class="py-3 px-4 text-xs">{{ pr.telefono }}</td>
+                                <td class="py-3 px-4 text-xs text-muted-foreground">{{ pr.correo }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
 
         <!-- Pestaña Clientes -->
-        <section v-if="activeTab === 'clientes'" class="rounded-lg bg-surface border border-border overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
-                            <th class="py-3 px-4 font-semibold">Nombre / Razón Social</th>
-                            <th class="py-3 px-4 font-semibold">Identificación</th>
-                            <th class="py-3 px-4 font-semibold">Segmento</th>
-                            <th class="py-3 px-4 font-semibold">Teléfono</th>
-                            <th class="py-3 px-4 font-semibold">Correo</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border">
-                        <tr v-for="cl in clientes" :key="cl.id" class="hover:bg-muted/25">
-                            <td class="py-3 px-4 font-semibold text-foreground">{{ cl.nombre }}</td>
-                            <td class="py-3 px-4 font-mono text-xs">{{ cl.identificacion }}</td>
-                            <td class="py-3 px-4">
-                                <span class="px-2.5 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">
-                                    {{ cl.tipo }}
-                                </span>
-                            </td>
-                            <td class="py-3 px-4 text-xs">{{ cl.telefono }}</td>
-                            <td class="py-3 px-4 text-xs text-muted-foreground">{{ cl.correo }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+        <div v-if="activeTab === 'clientes'" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <section class="lg:col-span-4 rounded-lg bg-surface border border-border p-5 h-fit">
+                <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Registrar Cliente</h2>
+                <p class="text-xs text-muted-foreground mb-4">Agrega clientes mayoristas o de mostrador para facturación y crédito</p>
+
+                <form @submit.prevent="guardarCliente" class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Nombre o Razón Social</label>
+                        <input
+                            v-model="formCliente.nombre"
+                            type="text"
+                            placeholder="Hotel y Restaurante Los Robles"
+                            required
+                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                        />
+                        <p v-if="formCliente.errors.nombre" class="text-xs text-estado-rojo-texto mt-1">{{ formCliente.errors.nombre }}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">RUC / Cédula</label>
+                            <input
+                                v-model="formCliente.identificacion"
+                                type="text"
+                                placeholder="J031000055112"
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Segmento</label>
+                            <select
+                                v-model="formCliente.tipo"
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            >
+                                <option value="Mayorista">Mayorista</option>
+                                <option value="Mostrador">Mostrador</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Teléfono</label>
+                            <input
+                                v-model="formCliente.telefono"
+                                type="text"
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Correo Electrónico</label>
+                            <input
+                                v-model="formCliente.correo"
+                                type="email"
+                                placeholder="compras@cliente.com.ni"
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        type="submit"
+                        :disabled="formCliente.processing"
+                        class="w-full h-10 rounded-lg bg-fresa hover:bg-frambuesa text-white text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                        Guardar Cliente
+                    </button>
+                </form>
+            </section>
+
+            <section class="lg:col-span-8 rounded-lg bg-surface border border-border overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
+                                <th class="py-3 px-4 font-semibold">Nombre / Razón Social</th>
+                                <th class="py-3 px-4 font-semibold">Identificación</th>
+                                <th class="py-3 px-4 font-semibold">Segmento</th>
+                                <th class="py-3 px-4 font-semibold">Teléfono</th>
+                                <th class="py-3 px-4 font-semibold">Correo</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            <tr v-for="cl in clientes" :key="cl.id" class="hover:bg-muted/25">
+                                <td class="py-3 px-4 font-semibold text-foreground">{{ cl.nombre }}</td>
+                                <td class="py-3 px-4 font-mono text-xs">{{ cl.identificacion }}</td>
+                                <td class="py-3 px-4">
+                                    <span class="px-2.5 py-0.5 rounded text-xs font-semibold bg-secondary text-secondary-foreground">
+                                        {{ cl.tipo }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-xs">{{ cl.telefono }}</td>
+                                <td class="py-3 px-4 text-xs text-muted-foreground">{{ cl.correo }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
     </ErpLayout>
 </template>

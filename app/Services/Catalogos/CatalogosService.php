@@ -2,8 +2,10 @@
 
 namespace App\Services\Catalogos;
 
+use App\Models\Catalogos\Cliente;
 use App\Models\Catalogos\Insumo;
 use App\Models\Catalogos\Producto;
+use App\Models\Catalogos\Proveedor;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Services\Seguridad\SeguridadService;
 use Illuminate\Support\Facades\DB;
@@ -54,6 +56,48 @@ class CatalogosService
             );
 
             return $insumo;
+        });
+    }
+
+    public function crearProveedor(array $data, int $actorId, ?string $ip): Proveedor
+    {
+        return DB::transaction(function () use ($data, $actorId, $ip) {
+            $proveedor = $this->catalogosRepository->createProveedor([
+                ...$data,
+                'activo' => true,
+            ]);
+
+            $this->seguridadService->registrarAuditoria(
+                $actorId,
+                'Catálogos',
+                'Alta de Proveedor',
+                "Se registró el proveedor {$proveedor->nombre} (RUC: {$proveedor->ruc_nit}).",
+                $ip
+            );
+
+            return $proveedor;
+        });
+    }
+
+    public function crearCliente(array $data, int $actorId, ?string $ip): Cliente
+    {
+        return DB::transaction(function () use ($data, $actorId, $ip) {
+            $cliente = $this->catalogosRepository->createCliente([
+                ...$data,
+                'identificacion' => $data['identificacion'] ?: 'CF-0001',
+                'telefono' => $data['telefono'] ?: '—',
+                'activo' => true,
+            ]);
+
+            $this->seguridadService->registrarAuditoria(
+                $actorId,
+                'Catálogos',
+                'Alta de Cliente',
+                "Se registró el cliente {$cliente->nombre} ({$cliente->tipo}).",
+                $ip
+            );
+
+            return $cliente;
         });
     }
 }

@@ -34,6 +34,20 @@ class ProduccionRepository
         return LoteProduccion::create($data);
     }
 
+    public function createReceta(array $recetaData, array $ingredientes): Receta
+    {
+        $receta = Receta::create($recetaData);
+        foreach ($ingredientes as $ing) {
+            $receta->ingredientes()->create([
+                'insumo_id' => $ing['insumo_id'],
+                'cantidad_requerida' => $ing['cantidad_requerida'],
+                'merma_estimada_porcentaje' => $ing['merma_estimada_porcentaje'] ?? 0,
+            ]);
+        }
+
+        return $receta->load(['producto', 'ingredientes.insumo.unidad']);
+    }
+
     public function findLoteForUpdate(int $id): LoteProduccion
     {
         return LoteProduccion::whereKey($id)->lockForUpdate()->firstOrFail();

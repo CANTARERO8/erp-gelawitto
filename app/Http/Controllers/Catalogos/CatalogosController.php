@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Catalogos;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Catalogos\StoreClienteRequest;
 use App\Http\Requests\Catalogos\StoreInsumoRequest;
 use App\Http\Requests\Catalogos\StoreProductoRequest;
+use App\Http\Requests\Catalogos\StoreProveedorRequest;
 use App\Http\Resources\Catalogos\ClienteResource;
 use App\Http\Resources\Catalogos\InsumoResource;
 use App\Http\Resources\Catalogos\ProductoResource;
@@ -54,5 +56,27 @@ class CatalogosController extends Controller
         );
 
         return back()->with('success', 'Insumo registrado correctamente en el catálogo.');
+    }
+
+    public function storeProveedor(StoreProveedorRequest $request): RedirectResponse
+    {
+        $this->catalogosService->crearProveedor(
+            $request->validated(),
+            $request->user()->id,
+            $request->ip()
+        );
+
+        return back()->with('success', 'Proveedor registrado correctamente en el catálogo.');
+    }
+
+    public function storeCliente(StoreClienteRequest $request): RedirectResponse
+    {
+        $this->catalogosService->crearCliente(
+            $request->validated(),
+            $request->user()->id,
+            $request->ip()
+        );
+
+        return back()->with('success', 'Cliente registrado correctamente en el catálogo.');
     }
 }

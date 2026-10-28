@@ -28,6 +28,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/catalogos', [CatalogosController::class, 'index'])->name('catalogos');
         Route::post('/catalogos/productos', [CatalogosController::class, 'storeProducto'])->name('catalogos.productos.store');
         Route::post('/catalogos/insumos', [CatalogosController::class, 'storeInsumo'])->name('catalogos.insumos.store');
+        Route::post('/catalogos/proveedores', [CatalogosController::class, 'storeProveedor'])->name('catalogos.proveedores.store');
+        Route::post('/catalogos/clientes', [CatalogosController::class, 'storeCliente'])->name('catalogos.clientes.store');
     });
 
     Route::middleware('rol:Contador')->group(function () {
@@ -43,6 +45,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('rol:Producción')->group(function () {
         Route::get('/produccion', [ProduccionController::class, 'index'])->name('produccion');
+        Route::post('/produccion/recetas', [ProduccionController::class, 'storeReceta'])->name('produccion.recetas.store');
         Route::post('/produccion/lotes', [ProduccionController::class, 'store'])->name('produccion.lotes.store');
         Route::post('/produccion/lotes/{lote}/ejecutar', [ProduccionController::class, 'ejecutar'])->name('produccion.lotes.ejecutar');
 
