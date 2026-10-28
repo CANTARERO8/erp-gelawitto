@@ -27,6 +27,9 @@ class VentasController extends Controller
         $turnoActivo = $this->ventasRepository->getTurnoActivo();
 
         $productos = $this->catalogosRepository->getProductosActivos()->map(function ($p) {
+            $enCuarentena = $this->ventasRepository->getStockEnCuarentena($p->id);
+            $disponible = max(0, round((float) $p->stock_actual - $enCuarentena, 3));
+
             return [
                 'id' => $p->id,
                 'sku' => $p->sku,
@@ -34,6 +37,8 @@ class VentasController extends Controller
                 'presentacion' => $p->presentacion,
                 'precio_venta' => (string) $p->precio_venta,
                 'stock_actual' => (string) $p->stock_actual,
+                'stock_en_cuarentena' => (string) $enCuarentena,
+                'stock_disponible' => (string) $disponible,
             ];
         });
 

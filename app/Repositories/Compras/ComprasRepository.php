@@ -29,10 +29,16 @@ class ComprasRepository
     public function createOrden(array $ordenData, array $lineaData): OrdenCompra
     {
         $orden = OrdenCompra::create($ordenData);
-        OrdenCompraLinea::create([
-            'orden_compra_id' => $orden->id,
-            ...$lineaData,
-        ]);
+
+        $lineas = isset($lineaData[0]) && is_array($lineaData[0]) ? $lineaData : [$lineaData];
+
+        foreach ($lineas as $linea) {
+            OrdenCompraLinea::create([
+                'orden_compra_id' => $orden->id,
+                ...$linea,
+            ]);
+        }
+
         return $orden->load(['proveedor', 'usuario', 'lineas.insumo']);
     }
 }

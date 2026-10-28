@@ -26,30 +26,68 @@ const props = defineProps<{
 
 const form = useForm({
     proveedor_id: props.proveedores[0]?.id ?? 1,
-    insumo_id: props.insumos[0]?.id ?? 1,
-    cantidad: '20',
-    costo_unitario: props.insumos[0]?.costo_promedio ?? '1.50',
+    aplicar_iva: false,
     notas: '',
+    lineas: [
+        {
+            insumo_id: props.insumos[0]?.id ?? 1,
+            cantidad: '20',
+            costo_unitario: props.insumos[0]?.costo_promedio ?? '120.00',
+        },
+    ],
 });
 
-// Condición financiera elegida al recibir cada orden pendiente, indexada por id de orden.
 const modalidadRecepcion = reactive<Record<number, string>>({});
 const recibiendoId = ref<number | null>(null);
 
-const totalEstimado = computed(() => {
-    return (Number(form.cantidad || 0) * Number(form.costo_unitario || 0)).toFixed(2);
-});
+function agregarLinea() {
+    const insumoDefault = props.insumos[0];
+    form.lineas.push({
+        insumo_id: insumoDefault?.id ?? 1,
+        cantidad: '10',
+        costo_unitario: insumoDefault?.costo_promedio ?? '100.00',
+    });
+}
 
-function actualizarCostoSugerido() {
-    const seleccionado = props.insumos.find((i) => i.id === Number(form.insumo_id));
-    if (seleccionado) {
-        form.costo_unitario = String(Number(seleccionado.costo_promedio).toFixed(2));
+function quitarLinea(idx: number) {
+    if (form.lineas.length > 1) {
+        form.lineas.splice(idx, 1);
     }
 }
 
+function actualizarCostoSugerido(idx: number) {
+    const linea = form.lineas[idx];
+    const seleccionado = props.insumos.find((i) => i.id === Number(linea.insumo_id));
+    if (seleccionado) {
+        linea.costo_unitario = String(Number(seleccionado.costo_promedio).toFixed(2));
+    }
+}
+
+const subtotalEstimado = computed(() => {
+    return form.lineas.reduce((acc, l) => acc + Number(l.cantidad || 0) * Number(l.costo_unitario || 0), 0);
+});
+
+const ivaEstimado = computed(() => {
+    return form.aplicar_iva ? subtotalEstimado.value * 0.15 : 0;
+});
+
+const totalEstimado = computed(() => {
+    return (subtotalEstimado.value + ivaEstimado.value).toFixed(2);
+});
+
 function crearOrden() {
     form.post('/compras', {
-        onSuccess: () => form.reset('notas'),
+        onSuccess: () => {
+            form.notas = '';
+            form.aplicar_iva = false;
+            form.lineas = [
+                {
+                    insumo_id: props.insumos[0]?.id ?? 1,
+                    cantidad: '20',
+                    costo_unitario: props.insumos[0]?.costo_promedio ?? '120.00',
+                },
+            ];
+        },
     });
 }
 
@@ -71,14 +109,14 @@ function recibirOrden(oc: { id: number }) {
 
     <ErpLayout
         title="Compras y Abastecimiento"
-        subtitle="Orden de compra al proveedor y recepción en almacén como pasos separados, con costo promedio ponderado y Kardex"
+        subtitle="Órdenes de compra multi-ítem con IVA opcional (15%), recepción en almacén, costo promedio ponderado y asiento contable automático"
     >
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Paso 1: orden de compra -->
-            <section class="lg:col-span-4 rounded-lg bg-surface border border-border p-5 h-fit">
+            <section class="lg:col-span-5 rounded-lg bg-surface border border-border p-5 h-fit">
                 <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Nueva Orden de Compra</h2>
                 <p class="text-xs text-muted-foreground mb-4">
-                    Registra el pedido al proveedor. El stock no cambia hasta recibirla en almacén
+                    Registra uno o varios insumos en la misma orden. El stock e impacto contable se aplican al recibirla en almacén
                 </p>
 
                 <form @submit.prevent="crearOrden" class="space-y-3.5">
@@ -92,43 +130,76 @@ function recibirOrden(oc: { id: number }) {
                         </select>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold mb-1">Insumo a Comprar</label>
-                        <select
-                            v-model="form.insumo_id"
-                            @change="actualizarCostoSugerido"
-                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-semibold">Partidas de Insumos ({{ form.lineas.length }})</label>
+                            <button
+                                type="button"
+                                @click="agregarLinea"
+                                class="text-xs font-semibold text-fresa hover:text-frambuesa cursor-pointer"
+                            >
+                                + Agregar Insumo
+                            </button>
+                        </div>
+
+                        <div
+                            v-for="(linea, idx) in form.lineas"
+                            :key="idx"
+                            class="p-3 rounded-lg bg-background border border-border space-y-2"
                         >
-                            <option v-for="i in insumos" :key="i.id" :value="i.id">
-                                {{ i.codigo }} - {{ i.nombre }} ({{ i.unidad }})
-                            </option>
-                        </select>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[11px] uppercase font-semibold text-muted-foreground">Partida #{{ idx + 1 }}</span>
+                                <button
+                                    v-if="form.lineas.length > 1"
+                                    type="button"
+                                    @click="quitarLinea(idx)"
+                                    class="text-xs text-estado-rojo-texto hover:underline cursor-pointer"
+                                >
+                                    Quitar
+                                </button>
+                            </div>
+
+                            <select
+                                v-model="linea.insumo_id"
+                                @change="actualizarCostoSugerido(idx)"
+                                class="w-full h-9 px-2.5 rounded-md border border-input bg-surface text-xs"
+                            >
+                                <option v-for="i in insumos" :key="i.id" :value="i.id">
+                                    {{ i.codigo }} - {{ i.nombre }} ({{ i.unidad }})
+                                </option>
+                            </select>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-muted-foreground mb-0.5">Cantidad</label>
+                                    <input
+                                        v-model="linea.cantidad"
+                                        type="number"
+                                        step="0.001"
+                                        min="0.001"
+                                        required
+                                        class="w-full h-9 px-2.5 rounded-md border border-input bg-surface text-xs"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-muted-foreground mb-0.5">Costo Unitario (C$)</label>
+                                    <input
+                                        v-model="linea.costo_unitario"
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        required
+                                        class="w-full h-9 px-2.5 rounded-md border border-input bg-surface text-xs"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold mb-1">Cantidad Solicitada</label>
-                            <input
-                                v-model="form.cantidad"
-                                type="number"
-                                step="0.001"
-                                min="0.001"
-                                required
-                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold mb-1">Costo Unitario ($)</label>
-                            <input
-                                v-model="form.costo_unitario"
-                                type="number"
-                                step="0.01"
-                                min="0.01"
-                                required
-                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-                            />
-                        </div>
-                    </div>
+                    <label class="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
+                        <input v-model="form.aplicar_iva" type="checkbox" class="rounded border-input" />
+                        Aplicar IVA Acreditable (15%)
+                    </label>
 
                     <div>
                         <label class="block text-xs font-semibold mb-1">Notas de la Orden</label>
@@ -140,9 +211,19 @@ function recibirOrden(oc: { id: number }) {
                         />
                     </div>
 
-                    <div class="p-3 rounded-lg bg-muted/60 border border-border flex items-center justify-between">
-                        <span class="text-xs font-semibold text-muted-foreground">Total de la Orden</span>
-                        <span class="text-lg font-titulo font-bold text-foreground">${{ totalEstimado }}</span>
+                    <div class="p-3 rounded-lg bg-muted/60 border border-border space-y-1">
+                        <div class="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Subtotal</span>
+                            <span>C$ {{ subtotalEstimado.toFixed(2) }}</span>
+                        </div>
+                        <div v-if="form.aplicar_iva" class="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>IVA Acreditable (15%)</span>
+                            <span>C$ {{ ivaEstimado.toFixed(2) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between pt-1 border-t border-border">
+                            <span class="text-xs font-semibold text-foreground">Total de la Orden</span>
+                            <span class="text-lg font-titulo font-bold text-foreground">C$ {{ totalEstimado }}</span>
+                        </div>
                     </div>
 
                     <button
@@ -156,11 +237,11 @@ function recibirOrden(oc: { id: number }) {
             </section>
 
             <!-- Paso 2: recepción y historial -->
-            <section class="lg:col-span-8 rounded-lg bg-surface border border-border overflow-hidden">
+            <section class="lg:col-span-7 rounded-lg bg-surface border border-border overflow-hidden">
                 <div class="px-5 py-4 border-b border-border">
                     <h2 class="text-base font-titulo font-semibold text-foreground">Órdenes de Compra</h2>
                     <p class="text-xs text-muted-foreground">
-                        Las órdenes pendientes se reciben en almacén para incrementar el stock y registrar el compromiso en Finanzas
+                        Las órdenes pendientes se reciben en almacén para incrementar el stock y registrar el compromiso en Finanzas y Contabilidad
                     </p>
                 </div>
 
@@ -199,7 +280,7 @@ function recibirOrden(oc: { id: number }) {
                                         {{ oc.estado }}
                                     </span>
                                 </td>
-                                <td class="py-3 px-4 text-right font-semibold">${{ Number(oc.total).toFixed(2) }}</td>
+                                <td class="py-3 px-4 text-right font-semibold">C$ {{ Number(oc.total).toFixed(2) }}</td>
                                 <td class="py-3 px-4 text-xs text-muted-foreground">{{ oc.comprador_nombre }}</td>
                                 <td class="py-3 px-4">
                                     <div v-if="oc.estado === 'Pendiente'" class="flex flex-col gap-1.5">

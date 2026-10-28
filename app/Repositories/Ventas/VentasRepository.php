@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Ventas;
 
+use App\Models\Produccion\LoteProduccion;
 use App\Models\Ventas\CajaTurno;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\VentaLinea;
@@ -52,6 +53,14 @@ class VentasRepository
         return (float) Venta::where('estado', 'Completada')->sum('total');
     }
 
+    public function getStockEnCuarentena(int $productoId): float
+    {
+        return (float) LoteProduccion::where('producto_id', $productoId)
+            ->where('estado', 'Finalizado')
+            ->whereIn('estado_calidad', ['Pendiente', 'Retenido'])
+            ->sum('cantidad_obtenida');
+    }
+
     public function getNextFolioVenta(): string
     {
         $consecutivo = Venta::count() + 1;
@@ -64,13 +73,18 @@ class VentasRepository
         return sprintf('TUR-2026-%03d', $consecutivo);
     }
 
-    public function createVenta(array $ventaData, array $lineaData): Venta
+    public function createVenta(array $ventaData, array $lineasData): Venta
     {
         $venta = Venta::create($ventaData);
-        VentaLinea::create([
-            'venta_id' => $venta->id,
-            ...$lineaData,
-        ]);
+        $lineas = isset($lineasData[0]) ? $lineasData : [$lineasData];
+
+        foreach ($lineas as $linea) {
+            VentaLinea::create([
+                'venta_id' => $venta->id,
+                ...$linea,
+            ]);
+        }
+
         return $venta->load(['cliente', 'vendedor', 'lineas.producto']);
     }
 

@@ -14,10 +14,14 @@ class StoreVentaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'producto_id' => ['required', 'exists:productos,id'],
             'cliente_id' => ['required', 'exists:clientes,id'],
-            'cantidad' => ['required', 'numeric', 'min:1'],
-            'metodo_pago' => ['required', 'in:Efectivo,Tarjeta,Transferencia'],
+            'metodo_pago' => ['required', 'in:Efectivo,Tarjeta,Transferencia,Crédito'],
+            'aplicar_iva' => ['nullable', 'boolean'],
+            'producto_id' => ['required_without:lineas', 'nullable', 'exists:productos,id'],
+            'cantidad' => ['required_without:lineas', 'nullable', 'numeric', 'min:1'],
+            'lineas' => ['required_without:producto_id', 'nullable', 'array', 'min:1'],
+            'lineas.*.producto_id' => ['required_with:lineas', 'exists:productos,id'],
+            'lineas.*.cantidad' => ['required_with:lineas', 'numeric', 'min:1'],
         ];
     }
 }

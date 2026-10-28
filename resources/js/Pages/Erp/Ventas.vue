@@ -33,6 +33,8 @@ const props = defineProps<{
         presentacion: string;
         precio_venta: string;
         stock_actual: string;
+        stock_en_cuarentena?: string;
+        stock_disponible?: string;
     }>;
     clientes: Array<{ id: number; nombre: string; tipo: string }>;
     historialTurnos: Array<{
@@ -49,37 +51,72 @@ const props = defineProps<{
 }>();
 
 const formVenta = useForm({
-    producto_id: props.productos[0]?.id ?? 1,
     cliente_id: props.clientes[0]?.id ?? 1,
-    cantidad: '1',
     metodo_pago: 'Efectivo',
+    aplicar_iva: false,
+    lineas: [
+        {
+            producto_id: props.productos[0]?.id ?? 1,
+            cantidad: '1',
+        },
+    ],
 });
 
 const formAbrirCaja = useForm({
     accion: 'abrir',
-    monto_inicial: '150.00',
+    monto_inicial: '3500.00',
     observaciones: 'Apertura de vitrina principal',
 });
 
 const formCerrarCaja = useForm({
     accion: 'cerrar',
-    monto_declarado: props.turnoActivo?.monto_esperado ?? '150.00',
+    monto_declarado: props.turnoActivo?.monto_esperado ?? '3500.00',
     observaciones: 'Cierre y arqueo conforme',
 });
 
-const productoSeleccionado = computed(() =>
-    props.productos.find((p) => p.id === Number(formVenta.producto_id))
-);
+function agregarLineaVenta() {
+    formVenta.lineas.push({
+        producto_id: props.productos[0]?.id ?? 1,
+        cantidad: '1',
+    });
+}
+
+function quitarLineaVenta(idx: number) {
+    if (formVenta.lineas.length > 1) {
+        formVenta.lineas.splice(idx, 1);
+    }
+}
+
+function stockDisponibleDe(p: { stock_actual: string; stock_disponible?: string }) {
+    return p.stock_disponible !== undefined ? Number(p.stock_disponible) : Number(p.stock_actual);
+}
+
+const subtotalVenta = computed(() => {
+    return formVenta.lineas.reduce((acc, linea) => {
+        const prod = props.productos.find((p) => p.id === Number(linea.producto_id));
+        const precio = Number(prod?.precio_venta ?? 0);
+        return acc + precio * Number(linea.cantidad || 0);
+    }, 0);
+});
+
+const ivaVenta = computed(() => {
+    return formVenta.aplicar_iva ? subtotalVenta.value * 0.15 : 0;
+});
 
 const totalVenta = computed(() => {
-    const precio = Number(productoSeleccionado.value?.precio_venta ?? 0);
-    return (precio * Number(formVenta.cantidad || 0)).toFixed(2);
+    return (subtotalVenta.value + ivaVenta.value).toFixed(2);
 });
 
 function cobrarVenta() {
     formVenta.post('/ventas', {
         onSuccess: () => {
-            formVenta.cantidad = '1';
+            formVenta.aplicar_iva = false;
+            formVenta.lineas = [
+                {
+                    producto_id: props.productos[0]?.id ?? 1,
+                    cantidad: '1',
+                },
+            ];
         },
     });
 }
@@ -98,7 +135,7 @@ function cerrarTurno() {
 
     <ErpLayout
         title="Punto de Venta y Control de Caja"
-        subtitle="Facturación de mostrador y mayorista, afectación de stock en tiempo real y corte de caja"
+        subtitle="Facturación multi-ítem con validación de cuarentena de Calidad, IVA (15%), crédito a mayoristas y corte de caja"
     >
         <!-- Estado actual del turno de caja -->
         <section class="rounded-lg bg-surface border border-border p-5">
@@ -116,22 +153,22 @@ function cerrarTurno() {
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div class="p-3 rounded-lg bg-background border border-border">
                             <p class="text-[11px] uppercase text-muted-foreground font-semibold">Fondo Inicial</p>
-                            <p class="text-lg font-titulo font-bold mt-0.5">${{ Number(turnoActivo.monto_inicial).toFixed(2) }}</p>
+                            <p class="text-lg font-titulo font-bold mt-0.5">C$ {{ Number(turnoActivo.monto_inicial).toFixed(2) }}</p>
                         </div>
                         <div class="p-3 rounded-lg bg-background border border-border">
                             <p class="text-[11px] uppercase text-muted-foreground font-semibold">Ventas Efectivo</p>
-                            <p class="text-lg font-titulo font-bold mt-0.5">${{ Number(turnoActivo.ventas_efectivo).toFixed(2) }}</p>
+                            <p class="text-lg font-titulo font-bold mt-0.5">C$ {{ Number(turnoActivo.ventas_efectivo).toFixed(2) }}</p>
                         </div>
                         <div class="p-3 rounded-lg bg-background border border-border">
                             <p class="text-[11px] uppercase text-muted-foreground font-semibold">Tarjeta / Transf.</p>
                             <p class="text-lg font-titulo font-bold mt-0.5">
-                                ${{ (Number(turnoActivo.ventas_tarjeta) + Number(turnoActivo.ventas_transferencia)).toFixed(2) }}
+                                C$ {{ (Number(turnoActivo.ventas_tarjeta) + Number(turnoActivo.ventas_transferencia)).toFixed(2) }}
                             </p>
                         </div>
                         <div class="p-3 rounded-lg bg-secondary/50 border border-border">
                             <p class="text-[11px] uppercase text-secondary-foreground font-semibold">Efectivo Esperado</p>
                             <p class="text-lg font-titulo font-bold text-frambuesa mt-0.5">
-                                ${{ Number(turnoActivo.monto_esperado).toFixed(2) }}
+                                C$ {{ Number(turnoActivo.monto_esperado).toFixed(2) }}
                             </p>
                         </div>
                     </div>
@@ -141,7 +178,7 @@ function cerrarTurno() {
                 <form @submit.prevent="cerrarTurno" class="lg:col-span-4 p-4 rounded-lg bg-background border border-border space-y-3">
                     <h3 class="text-sm font-titulo font-semibold text-foreground">Ejecutar Corte y Arqueo de Caja</h3>
                     <div>
-                        <label class="block text-xs font-semibold mb-1">Efectivo Contado en Gaveta ($)</label>
+                        <label class="block text-xs font-semibold mb-1">Efectivo Contado en Gaveta (C$)</label>
                         <input
                             v-model="formCerrarCaja.monto_declarado"
                             type="number"
@@ -168,7 +205,7 @@ function cerrarTurno() {
                 </div>
                 <div class="flex flex-wrap items-end gap-3">
                     <div>
-                        <label class="block text-xs font-semibold mb-1">Fondo Inicial ($)</label>
+                        <label class="block text-xs font-semibold mb-1">Fondo Inicial (C$)</label>
                         <input
                             v-model="formAbrirCaja.monto_inicial"
                             type="number"
@@ -190,24 +227,13 @@ function cerrarTurno() {
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Terminal de Punto de Venta -->
-            <section class="lg:col-span-4 rounded-lg bg-surface border border-border p-5 h-fit">
-                <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Registrar Venta</h2>
-                <p class="text-xs text-muted-foreground mb-4">Descuenta producto terminado e impacta la caja activa</p>
+            <section class="lg:col-span-5 rounded-lg bg-surface border border-border p-5 h-fit">
+                <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Terminal de Punto de Venta</h2>
+                <p class="text-xs text-muted-foreground mb-4">
+                    Solo permite vender stock liberado por Control de Calidad
+                </p>
 
                 <form @submit.prevent="cobrarVenta" class="space-y-3.5">
-                    <div>
-                        <label class="block text-xs font-semibold mb-1">Producto Terminado</label>
-                        <select
-                            v-model="formVenta.producto_id"
-                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-                        >
-                            <option v-for="p in productos" :key="p.id" :value="p.id">
-                                {{ p.nombre }} (${{ Number(p.precio_venta).toFixed(2) }} | Stock: {{ Number(p.stock_actual).toFixed(1) }})
-                            </option>
-                        </select>
-                        <p v-if="formVenta.errors.producto_id" class="text-xs text-estado-rojo-texto mt-1">{{ formVenta.errors.producto_id }}</p>
-                    </div>
-
                     <div>
                         <label class="block text-xs font-semibold mb-1">Cliente</label>
                         <select
@@ -220,35 +246,94 @@ function cerrarTurno() {
                         </select>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold mb-1">Cantidad (uds)</label>
-                            <input
-                                v-model="formVenta.cantidad"
-                                type="number"
-                                step="1"
-                                min="1"
-                                required
-                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold mb-1">Método de Pago</label>
-                            <select
-                                v-model="formVenta.metodo_pago"
-                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-semibold">Productos en Carrito ({{ formVenta.lineas.length }})</label>
+                            <button
+                                type="button"
+                                @click="agregarLineaVenta"
+                                class="text-xs font-semibold text-fresa hover:text-frambuesa cursor-pointer"
                             >
-                                <option value="Efectivo">Efectivo</option>
-                                <option value="Tarjeta">Tarjeta POS</option>
-                                <option value="Transferencia">Transferencia</option>
-                            </select>
+                                + Agregar Producto
+                            </button>
                         </div>
-                    </div>
-                    <p v-if="formVenta.errors.cantidad" class="text-xs text-estado-rojo-texto">{{ formVenta.errors.cantidad }}</p>
 
-                    <div class="p-3.5 rounded-lg bg-muted/60 border border-border flex items-center justify-between">
-                        <span class="text-xs font-semibold text-muted-foreground">Total a Cobrar</span>
-                        <span class="text-xl font-titulo font-bold text-fresa">${{ totalVenta }}</span>
+                        <div
+                            v-for="(linea, idx) in formVenta.lineas"
+                            :key="idx"
+                            class="p-3 rounded-lg bg-background border border-border space-y-2"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] uppercase font-semibold text-muted-foreground">Ítem #{{ idx + 1 }}</span>
+                                <button
+                                    v-if="formVenta.lineas.length > 1"
+                                    type="button"
+                                    @click="quitarLineaVenta(idx)"
+                                    class="text-xs text-estado-rojo-texto hover:underline cursor-pointer"
+                                >
+                                    Quitar
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <div class="sm:col-span-2">
+                                    <select
+                                        v-model="linea.producto_id"
+                                        class="w-full h-9 px-2.5 rounded-md border border-input bg-surface text-xs"
+                                    >
+                                        <option v-for="p in productos" :key="p.id" :value="p.id">
+                                            {{ p.nombre }} (C$ {{ Number(p.precio_venta).toFixed(2) }} | Disp: {{ stockDisponibleDe(p).toFixed(1) }}<template v-if="Number(p.stock_en_cuarentena ?? 0) > 0"> / Retenido: {{ Number(p.stock_en_cuarentena).toFixed(1) }}</template>)
+                                        </option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <input
+                                        v-model="linea.cantidad"
+                                        type="number"
+                                        step="1"
+                                        min="1"
+                                        required
+                                        placeholder="Cant."
+                                        class="w-full h-9 px-2.5 rounded-md border border-input bg-surface text-xs"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <p v-if="formVenta.errors.producto_id" class="text-xs text-estado-rojo-texto">{{ formVenta.errors.producto_id }}</p>
+                        <p v-if="formVenta.errors.cantidad" class="text-xs text-estado-rojo-texto">{{ formVenta.errors.cantidad }}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Método de Pago</label>
+                        <select
+                            v-model="formVenta.metodo_pago"
+                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                        >
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta POS</option>
+                            <option value="Transferencia">Transferencia Bancaria</option>
+                            <option value="Crédito">Crédito 15 días (Cuenta por Cobrar)</option>
+                        </select>
+                    </div>
+
+                    <label class="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
+                        <input v-model="formVenta.aplicar_iva" type="checkbox" class="rounded border-input" />
+                        Aplicar IVA Trasladado (15%)
+                    </label>
+
+                    <div class="p-3.5 rounded-lg bg-muted/60 border border-border space-y-1">
+                        <div class="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Subtotal</span>
+                            <span>C$ {{ subtotalVenta.toFixed(2) }}</span>
+                        </div>
+                        <div v-if="formVenta.aplicar_iva" class="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>IVA Trasladado (15%)</span>
+                            <span>C$ {{ ivaVenta.toFixed(2) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between pt-1 border-t border-border">
+                            <span class="text-xs font-semibold text-foreground">Total a Cobrar</span>
+                            <span class="text-xl font-titulo font-bold text-fresa">C$ {{ totalVenta }}</span>
+                        </div>
                     </div>
 
                     <button
@@ -256,13 +341,13 @@ function cerrarTurno() {
                         :disabled="formVenta.processing || !turnoActivo"
                         class="w-full h-10 rounded-lg bg-fresa hover:bg-frambuesa disabled:opacity-50 text-white text-xs font-semibold transition-colors cursor-pointer"
                     >
-                        Confirmar Cobro y Emitir Comprobante
+                        Confirmar Venta y Emitir Comprobante
                     </button>
                 </form>
             </section>
 
             <!-- Historial de ventas y cortes -->
-            <section class="lg:col-span-8 space-y-6">
+            <section class="lg:col-span-7 space-y-6">
                 <div class="rounded-lg bg-surface border border-border overflow-hidden">
                     <div class="px-5 py-4 border-b border-border">
                         <h2 class="text-base font-titulo font-semibold text-foreground">Ventas Registradas</h2>
@@ -287,7 +372,7 @@ function cerrarTurno() {
                                     <td class="py-3 px-4 text-xs">{{ String(v.fecha_venta).slice(0, 16) }}</td>
                                     <td class="py-3 px-4 font-medium text-foreground">{{ v.cliente_nombre }}</td>
                                     <td class="py-3 px-4 text-xs font-semibold">{{ v.metodo_pago }}</td>
-                                    <td class="py-3 px-4 text-right font-semibold">${{ Number(v.total).toFixed(2) }}</td>
+                                    <td class="py-3 px-4 text-right font-semibold">C$ {{ Number(v.total).toFixed(2) }}</td>
                                     <td class="py-3 px-4 text-xs text-muted-foreground">{{ v.vendedor_nombre }}</td>
                                 </tr>
                             </tbody>
@@ -318,11 +403,11 @@ function cerrarTurno() {
                                 <tr v-for="t in historialTurnos" :key="t.id">
                                     <td class="py-2.5 px-4 font-mono text-xs font-semibold">{{ t.codigo_turno }}</td>
                                     <td class="py-2.5 px-4 text-xs">{{ t.cajero_nombre }}</td>
-                                    <td class="py-2.5 px-4 text-right">${{ Number(t.monto_esperado).toFixed(2) }}</td>
+                                    <td class="py-2.5 px-4 text-right">C$ {{ Number(t.monto_esperado).toFixed(2) }}</td>
                                     <td class="py-2.5 px-4 text-right">
-                                        {{ t.monto_declarado !== null ? `$${Number(t.monto_declarado).toFixed(2)}` : '—' }}
+                                        {{ t.monto_declarado !== null ? `C$ ${Number(t.monto_declarado).toFixed(2)}` : '—' }}
                                     </td>
-                                    <td class="py-2.5 px-4 text-right font-semibold">${{ Number(t.diferencia).toFixed(2) }}</td>
+                                    <td class="py-2.5 px-4 text-right font-semibold">C$ {{ Number(t.diferencia).toFixed(2) }}</td>
                                     <td class="py-2.5 px-4">
                                         <span
                                             class="px-2 py-0.5 rounded text-xs font-semibold"
