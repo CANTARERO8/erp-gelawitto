@@ -428,4 +428,33 @@ class ModularArchitectureTest extends TestCase
 
         \Illuminate\Support\Facades\RateLimiter::clear('gelawitto-login|127.0.0.1');
     }
+
+    public function test_role_based_access_control_restricts_unauthorized_modules(): void
+    {
+        $cajero = User::where('email', 'caja@gelawitto.com')->firstOrFail();
+        $produccion = User::where('email', 'produccion@gelawitto.com')->firstOrFail();
+        $contador = User::where('email', 'finanzas@gelawitto.com')->firstOrFail();
+
+        // Cajero: autorizado en Dashboard, Ventas e Inventario; denegado en Seguridad, Finanzas, Producción
+        $this->actingAs($cajero)->get('/dashboard')->assertOk();
+        $this->actingAs($cajero)->get('/ventas')->assertOk();
+        $this->actingAs($cajero)->get('/inventario')->assertOk();
+        $this->actingAs($cajero)->get('/seguridad')->assertStatus(403);
+        $this->actingAs($cajero)->get('/finanzas')->assertStatus(403);
+        $this->actingAs($cajero)->get('/produccion')->assertStatus(403);
+
+        // Producción: autorizado en Producción, Calidad, Catálogos e Inventario; denegado en Ventas, Finanzas, Seguridad
+        $this->actingAs($produccion)->get('/produccion')->assertOk();
+        $this->actingAs($produccion)->get('/calidad')->assertOk();
+        $this->actingAs($produccion)->get('/catalogos')->assertOk();
+        $this->actingAs($produccion)->get('/ventas')->assertStatus(403);
+        $this->actingAs($produccion)->get('/seguridad')->assertStatus(403);
+
+        // Contador: autorizado en Finanzas, Compras, Catálogos e Inventario; denegado en Producción, Calidad, Seguridad
+        $this->actingAs($contador)->get('/finanzas')->assertOk();
+        $this->actingAs($contador)->get('/compras')->assertOk();
+        $this->actingAs($contador)->get('/produccion')->assertStatus(403);
+        $this->actingAs($contador)->get('/calidad')->assertStatus(403);
+        $this->actingAs($contador)->get('/seguridad')->assertStatus(403);
+    }
 }

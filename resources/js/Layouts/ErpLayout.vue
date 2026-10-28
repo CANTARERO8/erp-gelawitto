@@ -34,17 +34,33 @@ const toastVisible = ref(false);
 const toastMessage = ref('');
 const toastVariant = ref<'success' | 'error'>('success');
 
-const navItems = [
+interface NavItem {
+    name: string;
+    href: string;
+    routeMatch: string;
+    icon: any;
+    roles?: string[];
+}
+
+const allNavItems: NavItem[] = [
     { name: 'Tablero Principal', href: '/dashboard', routeMatch: '/dashboard', icon: LayoutDashboard },
-    { name: 'Catálogos Maestros', href: '/catalogos', routeMatch: '/catalogos', icon: Package },
-    { name: 'Compras a Proveedores', href: '/compras', routeMatch: '/compras', icon: ShoppingBag },
-    { name: 'Inventario y Kardex', href: '/inventario', routeMatch: '/inventario', icon: Boxes },
-    { name: 'Recetas y Producción', href: '/produccion', routeMatch: '/produccion', icon: FlaskConical },
-    { name: 'Calidad y Trazabilidad', href: '/calidad', routeMatch: '/calidad', icon: ClipboardCheck },
-    { name: 'Ventas y Turno de Caja', href: '/ventas', routeMatch: '/ventas', icon: Receipt },
-    { name: 'Finanzas y Cuentas', href: '/finanzas', routeMatch: '/finanzas', icon: Landmark },
-    { name: 'Usuarios y Auditoría', href: '/seguridad', routeMatch: '/seguridad', icon: ShieldCheck },
+    { name: 'Catálogos Maestros', href: '/catalogos', routeMatch: '/catalogos', icon: Package, roles: ['Administrador', 'Producción', 'Contador'] },
+    { name: 'Compras a Proveedores', href: '/compras', routeMatch: '/compras', icon: ShoppingBag, roles: ['Administrador', 'Contador'] },
+    { name: 'Inventario y Kardex', href: '/inventario', routeMatch: '/inventario', icon: Boxes, roles: ['Administrador', 'Producción', 'Contador', 'Cajero'] },
+    { name: 'Recetas y Producción', href: '/produccion', routeMatch: '/produccion', icon: FlaskConical, roles: ['Administrador', 'Producción'] },
+    { name: 'Calidad y Trazabilidad', href: '/calidad', routeMatch: '/calidad', icon: ClipboardCheck, roles: ['Administrador', 'Producción'] },
+    { name: 'Ventas y Turno de Caja', href: '/ventas', routeMatch: '/ventas', icon: Receipt, roles: ['Administrador', 'Cajero'] },
+    { name: 'Finanzas y Cuentas', href: '/finanzas', routeMatch: '/finanzas', icon: Landmark, roles: ['Administrador', 'Contador'] },
+    { name: 'Usuarios y Auditoría', href: '/seguridad', routeMatch: '/seguridad', icon: ShieldCheck, roles: ['Administrador'] },
 ];
+
+const navItems = computed(() => {
+    const rol = user.value?.rol;
+    if (!rol || rol === 'Administrador') {
+        return allNavItems;
+    }
+    return allNavItems.filter((item) => !item.roles || item.roles.includes(rol));
+});
 
 onMounted(() => {
     isDark.value = document.documentElement.classList.contains('dark');

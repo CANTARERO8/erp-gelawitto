@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'iiot.token' => \App\Http\Middleware\VerificarTokenIiot::class,
+            'rol' => \App\Http\Middleware\VerificarRol::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
