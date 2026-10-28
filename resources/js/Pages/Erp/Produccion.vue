@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
@@ -37,7 +37,20 @@ const props = defineProps<{
         estado: string;
         notas: string;
     }>;
+    productos?: Array<{
+        id: number;
+        sku: string;
+        nombre: string;
+    }>;
+    insumos?: Array<{
+        id: number;
+        codigo: string;
+        nombre: string;
+        unidad: string;
+    }>;
 }>();
+
+const mostrarNuevaReceta = ref(false);
 
 const form = useForm({
     receta_id: props.recetas[0]?.id ?? 1,
@@ -45,9 +58,74 @@ const form = useForm({
     notas: '',
 });
 
+const formReceta = useForm({
+    producto_id: props.productos?.[0]?.id ?? 1,
+    nombre: '',
+    rendimiento_unidades: '10',
+    tiempo_preparacion_min: 45,
+    instrucciones: '',
+    ingredientes: [
+        {
+            insumo_id: props.insumos?.[0]?.id ?? 1,
+            cantidad_requerida: '1.000',
+            merma_estimada_porcentaje: '0',
+        },
+    ],
+});
+
+const recetaSeleccionada = computed(() =>
+    props.recetas.find((r) => r.id === Number(form.receta_id))
+);
+
+// Simulador MRP: Explosión de materiales según la cantidad programada
+const explosionMrp = computed(() => {
+    const rec = recetaSeleccionada.value;
+    if (!rec) return [];
+    const factor = Number(form.cantidad_programada || 0) / Math.max(0.001, Number(rec.rendimiento_unidades));
+    return rec.ingredientes.map((ing) => {
+        const requerido = Number(ing.cantidad_requerida) * factor;
+        const disponible = Number(ing.stock_actual);
+        const faltante = Math.max(0, requerido - disponible);
+        return {
+            nombre: ing.insumo_nombre,
+            unidad: ing.unidad,
+            requerido: requerido.toFixed(3),
+            disponible: disponible.toFixed(3),
+            faltante: faltante.toFixed(3),
+            alcanza: disponible >= requerido,
+            costo: (requerido * Number(ing.costo_promedio)).toFixed(2),
+        };
+    });
+});
+
+const mrpCompleto = computed(() => explosionMrp.value.every((i) => i.alcanza));
+
 // Cantidad obtenida que el operador captura al ejecutar cada orden, indexada por id de lote.
 const obtenidoEjecucion = reactive<Record<number, string>>({});
 const ejecutandoId = ref<number | null>(null);
+
+function agregarIngrediente() {
+    formReceta.ingredientes.push({
+        insumo_id: props.insumos?.[0]?.id ?? 1,
+        cantidad_requerida: '1.000',
+        merma_estimada_porcentaje: '0',
+    });
+}
+
+function quitarIngrediente(idx: number) {
+    if (formReceta.ingredientes.length > 1) {
+        formReceta.ingredientes.splice(idx, 1);
+    }
+}
+
+function guardarReceta() {
+    formReceta.post('/produccion/recetas', {
+        onSuccess: () => {
+            formReceta.reset('nombre', 'instrucciones');
+            mostrarNuevaReceta.value = false;
+        },
+    });
+}
 
 function programarLote() {
     form.post('/produccion/lotes', {
@@ -72,16 +150,18 @@ function ejecutarLote(lote: { id: number; cantidad_programada: string }) {
     <Head title="Recetas y Producción" />
 
     <ErpLayout
-        title="Formulación y Producción por Lotes"
-        subtitle="Órdenes de producción programadas, ejecución con descuento transaccional de insumos y costeo real por lote"
+        title="Formulación, MRP y Producción por Lotes"
+        subtitle="Fórmulas técnicas, explosión de requerimientos de materiales (MRP) y ejecución transaccional en Córdobas (C$)"
     >
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Paso 1: programar orden de producción -->
-            <section class="lg:col-span-4 rounded-lg bg-surface border border-border p-5 h-fit">
-                <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Programar Orden de Producción</h2>
-                <p class="text-xs text-muted-foreground mb-4">
-                    Planifica el lote. Los insumos se descuentan y el producto entra al Kardex al ejecutarlo
-                </p>
+            <!-- Paso 1: programar orden de producción + Simulador MRP -->
+            <section class="lg:col-span-4 rounded-lg bg-surface border border-border p-5 h-fit space-y-4">
+                <div>
+                    <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Programar Orden de Producción</h2>
+                    <p class="text-xs text-muted-foreground">
+                        Planifica el lote y verifica con el simulador MRP la disponibilidad en almacén
+                    </p>
+                </div>
 
                 <form @submit.prevent="programarLote" class="space-y-3.5">
                     <div>
@@ -109,6 +189,28 @@ function ejecutarLote(lote: { id: number; cantidad_programada: string }) {
                         />
                     </div>
 
+                    <!-- Panel MRP de explosión de insumos -->
+                    <div v-if="explosionMrp.length > 0" class="p-3 rounded-lg bg-background border border-border space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Explosión MRP</span>
+                            <span
+                                class="px-2 py-0.5 rounded text-[11px] font-semibold"
+                                :class="mrpCompleto ? 'bg-estado-verde text-estado-verde-texto' : 'bg-estado-rojo text-estado-rojo-texto'"
+                            >
+                                {{ mrpCompleto ? 'Stock suficiente' : 'Faltan insumos' }}
+                            </span>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <div v-for="(item, idx) in explosionMrp" :key="idx" class="flex items-center justify-between gap-2">
+                                <span class="truncate text-foreground">{{ item.nombre }}</span>
+                                <span :class="item.alcanza ? 'text-muted-foreground' : 'text-estado-rojo-texto font-semibold'">
+                                    Req: {{ item.requerido }} {{ item.unidad }}
+                                    <template v-if="!item.alcanza">(Faltan {{ item.faltante }})</template>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-semibold mb-1">Notas de la Orden</label>
                         <input
@@ -129,8 +231,141 @@ function ejecutarLote(lote: { id: number; cantidad_programada: string }) {
                 </form>
             </section>
 
-            <!-- Fichas técnicas de recetas -->
+            <!-- Fichas técnicas de recetas + Creador de Receta -->
             <section class="lg:col-span-8 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-base font-titulo font-semibold text-foreground">Fichas Técnicas Oficiales ({{ recetas.length }})</h2>
+                    <button
+                        v-if="productos && insumos"
+                        type="button"
+                        @click="mostrarNuevaReceta = !mostrarNuevaReceta"
+                        class="px-3.5 py-2 rounded-lg border border-fresa text-fresa hover:bg-fresa hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                        {{ mostrarNuevaReceta ? 'Cerrar Formulario' : 'Nueva Fórmula Técnica' }}
+                    </button>
+                </div>
+
+                <!-- Formulario para crear nueva receta maestra -->
+                <form
+                    v-if="mostrarNuevaReceta && productos && insumos"
+                    @submit.prevent="guardarReceta"
+                    class="rounded-lg bg-surface border border-border p-5 space-y-4"
+                >
+                    <h3 class="text-sm font-titulo font-semibold text-foreground">Registrar Nueva Fórmula Técnica (BOM)</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Producto Terminado</label>
+                            <select
+                                v-model="formReceta.producto_id"
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            >
+                                <option v-for="p in productos" :key="p.id" :value="p.id">{{ p.sku }} - {{ p.nombre }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Nombre de la Fórmula</label>
+                            <input
+                                v-model="formReceta.nombre"
+                                type="text"
+                                placeholder="Fórmula Maestra Pistacho Imperial (Base 10L)"
+                                required
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Rendimiento Base (uds)</label>
+                            <input
+                                v-model="formReceta.rendimiento_unidades"
+                                type="number"
+                                step="0.5"
+                                min="0.5"
+                                required
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Tiempo Preparación (min)</label>
+                            <input
+                                v-model="formReceta.tiempo_preparacion_min"
+                                type="number"
+                                min="1"
+                                required
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold mb-1">Instrucciones de Proceso</label>
+                        <input
+                            v-model="formReceta.instrucciones"
+                            type="text"
+                            placeholder="Pasteurización, maduración y temperatura de mantecado"
+                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                        />
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-semibold">Ingredientes por Lote Base</label>
+                            <button
+                                type="button"
+                                @click="agregarIngrediente"
+                                class="text-xs font-semibold text-fresa hover:underline cursor-pointer"
+                            >
+                                + Agregar Ingrediente
+                            </button>
+                        </div>
+                        <div
+                            v-for="(ing, idx) in formReceta.ingredientes"
+                            :key="idx"
+                            class="grid grid-cols-12 gap-2 items-center"
+                        >
+                            <div class="col-span-7">
+                                <select
+                                    v-model="ing.insumo_id"
+                                    class="w-full h-9 px-2 rounded-md border border-input bg-background text-xs"
+                                >
+                                    <option v-for="i in insumos" :key="i.id" :value="i.id">
+                                        {{ i.codigo }} - {{ i.nombre }} ({{ i.unidad }})
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-span-4">
+                                <input
+                                    v-model="ing.cantidad_requerida"
+                                    type="number"
+                                    step="0.001"
+                                    min="0.001"
+                                    required
+                                    placeholder="Cantidad"
+                                    class="w-full h-9 px-2 rounded-md border border-input bg-background text-xs"
+                                />
+                            </div>
+                            <div class="col-span-1 text-right">
+                                <button
+                                    type="button"
+                                    @click="quitarIngrediente(idx)"
+                                    class="text-xs text-estado-rojo-texto font-semibold cursor-pointer"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        :disabled="formReceta.processing"
+                        class="w-full h-10 rounded-lg bg-fresa hover:bg-frambuesa text-white text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                        Guardar Fórmula Técnica
+                    </button>
+                </form>
+
                 <article
                     v-for="rec in recetas"
                     :key="rec.id"
@@ -142,7 +377,7 @@ function ejecutarLote(lote: { id: number; cantidad_programada: string }) {
                             <p class="text-xs text-muted-foreground">{{ rec.instrucciones }}</p>
                         </div>
                         <span class="px-3 py-1 rounded-md text-xs font-semibold bg-secondary text-secondary-foreground">
-                            Base: {{ Number(rec.rendimiento_unidades).toFixed(0) }} tinas ({{ rec.tiempo_preparacion_min }} min)
+                            Base: {{ Number(rec.rendimiento_unidades).toFixed(0) }} uds ({{ rec.tiempo_preparacion_min }} min)
                         </span>
                     </div>
 
@@ -166,7 +401,7 @@ function ejecutarLote(lote: { id: number; cantidad_programada: string }) {
                                         {{ Number(ing.stock_actual).toFixed(2) }} {{ ing.unidad }}
                                     </td>
                                     <td class="py-2.5 px-4 text-right font-medium">
-                                        ${{ (Number(ing.cantidad_requerida) * Number(ing.costo_promedio)).toFixed(2) }}
+                                        C$ {{ (Number(ing.cantidad_requerida) * Number(ing.costo_promedio)).toFixed(2) }}
                                     </td>
                                 </tr>
                             </tbody>
@@ -220,8 +455,8 @@ function ejecutarLote(lote: { id: number; cantidad_programada: string }) {
                             <template v-else>
                                 <td class="py-3 px-4 text-right font-semibold">{{ Number(l.cantidad_obtenida).toFixed(1) }}</td>
                                 <td class="py-3 px-4 text-right text-estado-rojo-texto">{{ Number(l.merma).toFixed(2) }}</td>
-                                <td class="py-3 px-4 text-right">${{ Number(l.costo_total_lote).toFixed(2) }}</td>
-                                <td class="py-3 px-4 text-right font-semibold">${{ Number(l.costo_unitario_resultante).toFixed(2) }}</td>
+                                <td class="py-3 px-4 text-right">C$ {{ Number(l.costo_total_lote).toFixed(2) }}</td>
+                                <td class="py-3 px-4 text-right font-semibold">C$ {{ Number(l.costo_unitario_resultante).toFixed(2) }}</td>
                             </template>
 
                             <td class="py-3 px-4">
