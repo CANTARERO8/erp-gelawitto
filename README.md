@@ -4,6 +4,12 @@ Sistema integral de planificación de recursos empresariales para la heladería 
 
 Construido bajo una arquitectura empresarial modular en capas con **Laravel**, **Vue 3 (Inertia.js + TypeScript)**, **Tailwind CSS v4** y **PostgreSQL 16**, combinando el patrón arquitectónico de repositorios, servicios, recursos y validaciones por dominio con la identidad visual de Gelawitto.
 
+> **Acceso Rápido al Sistema (`http://localhost:8000` | Contraseña general: `password123`)**  
+> **Administrador:** `admin@gelawitto.com`  
+> **Producción:** `produccion@gelawitto.com`  
+> **Caja (POS):** `caja@gelawitto.com`  
+> **Contabilidad:** `finanzas@gelawitto.com`
+
 ---
 
 ## 🍨 Acerca de la Empresa: Gelawitto Artesanal
