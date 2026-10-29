@@ -1,8 +1,116 @@
 # Gelawitto ERP
 
-Sistema integral de planificación de recursos empresariales para la heladería artesanal **Gelawitto**, diseñado para administrar catálogos maestros, compras a proveedores, inventario con libro de Kardex inmutable, formulación técnica y lotes de producción, punto de venta con control de turnos de caja, finanzas operativas y auditoría de seguridad.
+Sistema integral de planificación de recursos empresariales para la heladería artesanal **Gelawitto**, diseñado para administrar catálogos maestros, compras a proveedores, inventario con libro de Kardex inmutable, formulación técnica y lotes de producción, punto de venta con control de turnos de caja, finanzas operativas con contabilidad de partida doble y auditoría de seguridad.
 
 Construido bajo una arquitectura empresarial modular en capas con **Laravel**, **Vue 3 (Inertia.js + TypeScript)**, **Tailwind CSS v4** y **PostgreSQL 16**, combinando el patrón arquitectónico de repositorios, servicios, recursos y validaciones por dominio con la identidad visual de Gelawitto.
+
+---
+
+## 🍨 Acerca de la Empresa: Gelawitto Artesanal
+
+**Gelawitto** es una empresa nicaragüense dedicada a la fabricación artesanal y comercialización de gelato italiano y sorbetes de fruta natural. El negocio abarca toda la cadena de valor de la industria de helados:
+
+1. **Abastecimiento y Proveedores:** Compra de materia prima local (leche entera, crema para batir, pulpas de fruta fresca, azúcares y vasos reciclables) con costos registrados en Córdobas Nicaragüenses (`C$`).
+2. **Formulación Técnica y Producción (BOM):** Estandarización de recetas maestras que calculan automáticamente la cantidad de insumos requeridos según el tamaño del lote, tiempos de maduración y mermas esperadas.
+3. **Control de Calidad y Cadena de Frío:** Los lotes producidos entran en cuarentena obligatoria (`Pendiente`) hasta que Control de Calidad los inspecciona y libera para la venta. Además, se registran lecturas de temperatura en congeladores industriales.
+4. **Punto de Venta (POS) y Mayoristas:** Ventas de mostrador al público general (efectivo, tarjeta, transferencia) y ventas a crédito para clientes comerciales (hoteles y restaurantes) con cálculo automático de IVA (15%).
+5. **Contabilidad General y Finanzas:** Registro automático de asientos contables de partida doble ($\sum \text{Debe} = \sum \text{Haber}$) en el Libro Diario, control de cuentas por cobrar y por pagar, Estado de Resultados y Balance General.
+
+---
+
+## 🚀 Guía Rápida para Principiantes: ¿Cómo instalar y correr el sistema desde cero?
+
+Si acabas de clonar o descargar este proyecto y no tienes mucha experiencia configurando servidores o entornos de programación, **esta guía te llevará de la mano paso a paso**.
+
+### 1. Programas que necesitas instalar primero (Solo una vez)
+Descarga e instala estas herramientas gratuitas en tu computadora:
+
+1. **Git:** [Descargar Git](https://git-scm.com/downloads) — *Para descargar y sincronizar el código.*
+2. **PHP 8.3 o superior:** [Descargar PHP](https://www.php.net/) — *El lenguaje del backend. Si usas Windows o Mac, la opción más fácil y recomendada es instalar [Laravel Herd](https://herd.laravel.com/) o [Laragon](https://laragon.org/).*
+3. **Composer:** [Descargar Composer](https://getcomposer.org/download/) — *El gestor de paquetes de PHP.*
+4. **Node.js (versión 20 o superior):** [Descargar Node.js](https://nodejs.org/) — *Incluye `npm`, necesario para compilar las pantallas visuales.*
+5. **PostgreSQL con pgAdmin 4:** [Descargar PostgreSQL](https://www.postgresql.org/download/) — *El motor donde se guardará la base de datos.*
+
+---
+
+### 2. Pasos para poner a correr el ERP
+
+Abre tu terminal (**PowerShell** o **Símbolo del sistema** en Windows, o **Terminal** en Mac/Linux) y escribe los siguientes comandos en orden:
+
+#### Paso 1: Clonar el repositorio y entrar a la carpeta
+```bash
+git clone https://github.com/CANTARERO8/erp-gelawitto.git
+cd erp-gelawitto
+```
+
+#### Paso 2: Crear el archivo de configuración `.env`
+- En Windows (PowerShell/CMD):
+  ```powershell
+  copy .env.example .env
+  ```
+- En Mac o Linux:
+  ```bash
+  cp .env.example .env
+  ```
+
+#### Paso 3: Configurar la base de datos en pgAdmin 4
+1. Abre **pgAdmin 4**.
+2. Da clic derecho en **Databases** ➔ **Create** ➔ **Database...**
+3. Escribe de nombre: `gelawitto_erp` y da clic en **Save**.
+4. Abre el archivo `.env` en la raíz del proyecto (con Bloc de Notas o VS Code) y verifica que tenga tus credenciales de PostgreSQL:
+   ```env
+   DB_CONNECTION=pgsql
+   DB_HOST=127.0.0.1
+   DB_PORT=5432
+   DB_DATABASE=gelawitto_erp
+   DB_USERNAME=postgres
+   DB_PASSWORD=tu_contraseña_de_postgres
+   ```
+   *(Si utilizas el contenedor Docker incluido en el proyecto, el puerto configurado es `5433`)*.
+
+#### Paso 4: Descargar las librerías del sistema
+Ejecuta estos dos comandos en la terminal:
+```bash
+composer install
+npm install
+```
+
+#### Paso 5: Generar la clave de seguridad de la aplicación
+```bash
+php artisan key:generate
+```
+
+#### Paso 6: Crear automáticamente todas las tablas y datos de prueba
+Ejecuta este comando para construir todas las tablas y cargar recetas, helados, insumos y usuarios iniciales:
+```bash
+php artisan migrate:fresh --seed
+```
+
+#### Paso 7: Compilar la interfaz visual y encender el servidor
+Compila los estilos y vistas:
+```bash
+npm run build
+```
+Y arranca el servidor web:
+```bash
+php artisan serve
+```
+
+---
+
+### 3. ¿Cómo entrar al sistema?
+
+Abre tu navegador (Chrome, Edge, Firefox, Brave) y entra a:
+👉 **[http://localhost:8000](http://localhost:8000)**
+
+Inicia sesión con cualquiera de las cuentas creadas por el sistema:
+
+| Rol de Trabajo | Correo de Acceso | Contraseña | ¿Qué funciones tiene asignadas? |
+| :--- | :--- | :--- | :--- |
+| **Administrador General** | `admin@gelawitto.com` | `password123` | Control total del sistema, seguridad, usuarios y auditoría inmutable. |
+| **Jefe de Producción** | `produccion@gelawitto.com` | `password123` | Crear recetas, simulador MRP, programar lotes y control de calidad. |
+| **Cajero / Punto de Venta** | `caja@gelawitto.com` | `password123` | Apertura de turno, cobro (mostrador/crédito) y arqueo de caja. |
+| **Contador / Finanzas** | `finanzas@gelawitto.com` | `password123` | Libro Diario (Partida Doble), Balance General, Estado de Resultados y compras. |
 
 ---
 
@@ -19,19 +127,21 @@ Construido bajo una arquitectura empresarial modular en capas con **Laravel**, *
 
 ## Tabla de Contenidos
 
-1. [Equipo de Desarrollo](#equipo-de-desarrollo)
-2. [Arquitectura y Stack Tecnológico](#1-arquitectura-y-stack-tecnológico)
-3. [Identidad Visual y Paleta de Colores](#2-identidad-visual-y-paleta-de-colores)
-4. [Módulos Integrados del ERP](#3-módulos-integrados-del-erp)
-5. [Requisitos Previos del Sistema](#4-requisitos-previos-del-sistema)
-6. [Guía de Instalación Paso a Paso (Desde Cero)](#5-guía-de-instalación-paso-a-paso-desde-cero)
-7. [Guía Completa de Base de Datos: Inspección, Enlace y Clientes Visuales](#6-guía-completa-de-base-de-datos-inspección-enlace-y-clientes-visuales)
-8. [Diccionario de Tablas del Esquema Relacional](#7-diccionario-de-tablas-del-esquema-relacional)
-9. [Credenciales de Acceso al ERP](#8-credenciales-de-acceso-al-erp)
-10. [Ejecución de Pruebas Automatizadas](#9-ejecución-de-pruebas-automatizadas)
-11. [Solución de Problemas Frecuentes (Troubleshooting)](#10-solución-de-problemas-frecuentes-troubleshooting)
-12. [Guía de Colaboración y Flujo de Trabajo en Git](#11-guía-de-colaboración-y-flujo-de-trabajo-en-git)
-13. [Estructura Detallada de Archivos y Capas del Proyecto](#12-estructura-detallada-de-archivos-y-capas-del-proyecto)
+1. [Acerca de la Empresa Gelawitto](#-acerca-de-la-empresa-gelawitto-artesanal)
+2. [Guía Rápida para Principiantes](#-guía-rápida-para-principiantes-cómo-instalar-y-correr-el-sistema-desde-cero)
+3. [Equipo de Desarrollo](#equipo-de-desarrollo)
+4. [Arquitectura y Stack Tecnológico](#1-arquitectura-y-stack-tecnológico)
+5. [Identidad Visual y Paleta de Colores](#2-identidad-visual-y-paleta-de-colores)
+6. [Módulos Integrados del ERP](#3-módulos-integrados-del-erp)
+7. [Requisitos Previos del Sistema](#4-requisitos-previos-del-sistema)
+8. [Guía de Instalación Avanzada (Docker)](#5-guía-de-instalación-paso-a-paso-desde-cero)
+9. [Guía Completa de Base de Datos: Inspección, Enlace y Clientes Visuales](#6-guía-completa-de-base-de-datos-inspección-enlace-y-clientes-visuales)
+10. [Diccionario de Tablas del Esquema Relacional](#7-diccionario-de-tablas-del-esquema-relacional)
+11. [Credenciales de Acceso al ERP](#8-credenciales-de-acceso-al-erp)
+12. [Ejecución de Pruebas Automatizadas](#9-ejecución-de-pruebas-automatizadas)
+13. [Solución de Problemas Frecuentes (Troubleshooting)](#10-solución-de-problemas-frecuentes-troubleshooting)
+14. [Guía de Colaboración y Flujo de Trabajo en Git](#11-guía-de-colaboración-y-flujo-de-trabajo-en-git)
+15. [Estructura Detallada de Archivos y Capas del Proyecto](#12-estructura-detallada-de-archivos-y-capas-del-proyecto)
 
 ---
 
