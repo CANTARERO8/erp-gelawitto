@@ -11,6 +11,10 @@ class HandleInertiaRequests extends Middleware
 
     public function version(Request $request): ?string
     {
+        if ($request->hasHeader('X-Spa-Client')) {
+            return $request->header('X-Inertia-Version');
+        }
+
         return parent::version($request);
     }
 

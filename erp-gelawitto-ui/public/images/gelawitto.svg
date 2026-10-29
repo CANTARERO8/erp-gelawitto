@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 240" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #FDFBF7; }
+      .scoop-pink { fill: #FFD1DC; }
+      .scoop-mint { fill: #C1F0DC; }
+      .scoop-peach { fill: #FFE5B4; }
+      .line { fill: none; stroke: #4A3B32; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
+      .brand-title { font-family: 'Comfortaa', sans-serif; font-size: 58px; font-weight: 700; fill: #4A3B32; letter-spacing: 2px; dominant-baseline: central; }
+    </style>
+  </defs>
+
+  <!-- Fondo Crema Vainilla -->
+  <rect class="bg" width="650" height="240" rx="24" />
+
+  <!-- Grupo del Icono desplazado a la izquierda -->
+  <g transform="translate(-145, -45)">
+    <circle class="scoop-mint" cx="272" cy="135" r="34" />
+    <circle class="scoop-peach" cx="328" cy="135" r="34" />
+    <circle class="scoop-pink" cx="300" cy="95" r="36" />
+
+    <path class="line" d="M 268 102 A 36 36 0 1 1 332 102" />
+    <path class="line" d="M 265 162 A 34 34 0 1 1 285 105" />
+    <path class="line" d="M 315 105 A 34 34 0 1 1 335 162" />
+    <path class="line" d="M 256 162 Q 278 174 300 162 Q 322 174 344 162" />
+
+    <path class="line" d="M 262 165 L 300 255 L 338 165" />
+    <line class="line" x1="278" y1="202" x2="312" y2="168" />
+    <line class="line" x1="289" y1="228" x2="326" y2="191" />
+    <path class="line" d="M 355 65 Q 355 80 370 80 Q 355 80 355 95 Q 355 80 340 80 Q 355 80 355 65 Z" />
+  </g>
+
+  <!-- Únicamente el nombre Gelawitto a la derecha -->
+  <text x="235" y="122" class="brand-title">Gelawitto</text>
+</svg>
