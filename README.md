@@ -43,83 +43,40 @@ Descarga e instala estas herramientas gratuitas en tu computadora:
 
 Abre tu terminal (**PowerShell** o **Símbolo del sistema** en Windows, o **Terminal** en Mac/Linux) y escribe los siguientes comandos en orden:
 
-#### Paso 1: Clonar el repositorio y entrar a la carpeta
+#### Paso 1: Clonar el repositorio
 ```bash
 git clone https://github.com/CANTARERO8/erp-gelawitto.git
 cd erp-gelawitto
 ```
 
-#### Paso 2: Crear el archivo de configuración `.env`
-- En Windows (PowerShell/CMD):
-  ```powershell
-  copy .env.example .env
-  ```
-- En Mac o Linux:
-  ```bash
-  cp .env.example .env
-  ```
-
-#### Paso 3: Configurar la base de datos en pgAdmin 4
+#### Paso 2: Configurar la base de datos en pgAdmin 4
 1. Abre **pgAdmin 4**.
 2. Da clic derecho en **Databases** -> **Create** -> **Database...**
 3. Escribe de nombre: `gelawitto_erp` y da clic en **Save**.
-4. Abre el archivo `.env` en la raíz del proyecto (con Bloc de Notas o VS Code) y verifica que tenga tus credenciales de PostgreSQL:
-   ```env
-   DB_CONNECTION=pgsql
-   DB_HOST=127.0.0.1
-   DB_PORT=5432
-   DB_DATABASE=gelawitto_erp
-   DB_USERNAME=postgres
-   DB_PASSWORD=tu_contraseña_de_postgres
-   ```
-   *(Si utilizas el contenedor Docker incluido en el proyecto, el puerto configurado es `5433`)*.
 
-#### Paso 4: Descargar las librerías del sistema
-Ejecuta estos dos comandos en la terminal:
+#### Paso 3: Configurar e iniciar el Backend (`erp-gelawitto-api`)
+Entra a la carpeta del backend, crea el archivo `.env`, instala las librerías, ejecuta las migraciones con los datos iniciales y enciende el servidor en el puerto `8000`:
+```bash
+cd erp-gelawitto-api
+cp .env.example .env
+```
+Abre `erp-gelawitto-api/.env` y verifica tus credenciales de PostgreSQL (`DB_DATABASE=gelawitto_erp`, `DB_USERNAME=postgres`, `DB_PASSWORD=tu_contraseña`). Luego ejecuta:
 ```bash
 composer install
-npm install
-```
-
-#### Paso 5: Generar la clave de seguridad de la aplicación
-```bash
 php artisan key:generate
-```
-
-#### Paso 6: Crear automáticamente todas las tablas y datos de prueba
-Ejecuta este comando para construir todas las tablas y cargar recetas, helados, insumos y usuarios iniciales:
-```bash
 php artisan migrate:fresh --seed
+php artisan serve --port=8000
 ```
 
-#### Paso 7: Encender el sistema
-
-Tienes dos modalidades disponibles incluidas en este mismo proyecto:
-
-**Modalidad A: Sistema Integrado (Backend + Interfaz Inertia en puerto 8000)**
+#### Paso 4: Configurar e iniciar el Frontend (`erp-gelawitto-ui`)
+Abre una **segunda terminal**, entra a la carpeta del frontend e inicia el servidor de desarrollo:
 ```bash
-npm run build
-php artisan serve
+cd erp-gelawitto-ui
+npm install
+npm run dev
 ```
 
-**Modalidad B: Frontend Desacoplado SPA (`erp-gelawitto-ui` en puerto 5174 y API en 8000)**
-Para correr ambos servidores en simultáneo con un solo comando:
-```bash
-npm run dev:all
-```
-O de manera individual en terminales separadas:
-- Terminal 1 (Backend API):
-  ```bash
-  php artisan serve --port=8000
-  ```
-- Terminal 2 (Frontend `erp-gelawitto-ui`):
-  ```bash
-  npm run ui:dev
-  ```
-Para compilar la versión estática de producción del frontend:
-```bash
-npm run ui:build
-```
+*(Nota: Si prefieres correr la vista monolítica integrada directamente desde `erp-gelawitto-api` en el puerto `8000`, basta con ejecutar `npm install && npm run build` dentro de `erp-gelawitto-api`).*
 
 ---
 
@@ -547,91 +504,50 @@ Toda modificación debe realizarse en una rama derivada de `main`:
 
 ## 12. Estructura Detallada de Archivos y Capas del Proyecto
 
-El código fuente sigue una arquitectura limpia dividida por dominios:
+El repositorio está organizado en dos aplicaciones desacopladas (`erp-gelawitto-api` y `erp-gelawitto-ui`) junto con la documentación oficial:
 
 ```text
 erp-gelawitto/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/          # Controladores delgados por dominio
-│   │   │   ├── Auth/             # AuthController (Login, Logout, Rate Limiting)
-│   │   │   ├── Catalogos/        # CatalogosController
-│   │   │   ├── Compras/          # ComprasController
-│   │   │   ├── Dashboard/        # DashboardController
-│   │   │   ├── Finanzas/         # FinanzasController
-│   │   │   ├── Inventario/       # InventarioController
-│   │   │   ├── Produccion/       # ProduccionController
-│   │   │   ├── Seguridad/        # SeguridadController
-│   │   │   └── Ventas/           # VentasController
-│   │   ├── Middleware/
-│   │   │   └── HandleInertiaRequests.php
-│   │   ├── Requests/             # FormRequests con reglas de validación por módulo
-│   │   │   ├── Auth/             # LoginRequest
-│   │   │   ├── Catalogos/        # StoreProductoRequest, StoreInsumoRequest
-│   │   │   ├── Compras/          # StoreCompraRequest
-│   │   │   ├── Finanzas/         # StoreGastoRequest
-│   │   │   ├── Inventario/       # StoreAjusteRequest
-│   │   │   ├── Produccion/       # StoreLoteRequest
-│   │   │   ├── Seguridad/        # StoreUsuarioRequest
-│   │   │   └── Ventas/           # StoreVentaRequest, GestionarCajaRequest
-│   │   └── Resources/            # Transformadores JSON estandarizados para las vistas
-│   │       ├── Catalogos/        # ProductoResource, InsumoResource, ProveedorResource, etc.
-│   │       ├── Compras/          # OrdenCompraResource
-│   │       ├── Finanzas/         # FinanzasMovimientoResource
-│   │       ├── Inventario/       # KardexResource
-│   │       ├── Produccion/       # RecetaResource, LoteResource
-│   │       ├── Seguridad/        # UserResource, BitacoraResource
-│   │       └── Ventas/           # VentaResource, CajaTurnoResource
-│   ├── Models/                   # Modelos Eloquent con relaciones y casts decimales
-│   │   ├── Catalogos/            # Producto, Insumo, Proveedor, Cliente, UnidadMedida
-│   │   ├── Compras/              # OrdenCompra, OrdenCompraLinea
-│   │   ├── Finanzas/             # FinanzasMovimiento
-│   │   ├── Inventario/           # MovimientoInventario
-│   │   ├── Produccion/           # Receta, RecetaInsumo, LoteProduccion
-│   │   ├── Seguridad/            # BitacoraAuditoria
-│   │   ├── Ventas/               # CajaTurno, Venta, VentaLinea
-│   │   └── User.php
-│   ├── Repositories/             # Consultas Eloquent y bloqueos pesimistas (lockForUpdate)
-│   │   ├── Catalogos/            # CatalogosRepository
-│   │   ├── Compras/              # ComprasRepository
-│   │   ├── Finanzas/             # FinanzasRepository
-│   │   ├── Inventario/           # InventarioRepository
-│   │   ├── Produccion/           # ProduccionRepository
-│   │   ├── Seguridad/            # SeguridadRepository
-│   │   └── Ventas/               # VentasRepository
-│   └── Services/                 # Reglas de negocio y transacciones atómicas (DB::transaction)
-│       ├── Catalogos/            # CatalogosService
-│       ├── Compras/              # ComprasService
-│       ├── Finanzas/             # FinanzasService
-│       ├── Inventario/           # InventarioService
-│       ├── Produccion/           # ProduccionService
-│       ├── Seguridad/            # SeguridadService
-│       └── Ventas/               # VentasService
-├── config/                       # Archivos de configuración de Laravel e Inertia
-├── database/
-│   ├── migrations/               # Esquema DDL de las 14 tablas relacionales
-│   └── seeders/                  # Datos iniciales completos (DatabaseSeeder.php)
-├── docs/
-│   └── entregable/
-│       └── bitacora-aportes.md   # Registro histórico de colaboraciones del equipo
-├── resources/
-│   ├── css/
-│   │   └── app.css               # Configuración de Tailwind CSS v4 y paleta Gelawitto
-│   ├── js/
+├── erp-gelawitto-api/            # Backend API & Motor Transaccional (Laravel + PostgreSQL)
+│   ├── app/
+│   │   ├── Http/
+│   │   │   ├── Controllers/      # Controladores por dominio (Auth, Catalogos, Compras, etc.)
+│   │   │   ├── Middleware/       # HandleInertiaRequests y control de acceso por roles
+│   │   │   ├── Requests/         # FormRequests con validaciones de negocio
+│   │   │   └── Resources/        # Transformadores JSON estandarizados
+│   │   ├── Models/               # Modelos Eloquent con relaciones y casts decimales
+│   │   ├── Repositories/         # Acceso a datos y bloqueos pesimistas (lockForUpdate)
+│   │   └── Services/             # Lógica de negocio y partida doble (DB::transaction)
+│   ├── config/                   # Configuración de Laravel, base de datos y CORS
+│   ├── database/
+│   │   ├── migrations/           # Esquema DDL de las 19 tablas relacionales
+│   │   └── seeders/              # Datos iniciales y catálogo de cuentas (DatabaseSeeder.php)
+│   ├── routes/
+│   │   └── web.php               # Endpoints y rutas autenticadas por rol
+│   ├── tests/
+│   │   └── Feature/              # Suite de 43 pruebas de integración en PHPUnit
+│   ├── .env.example              # Plantilla de configuración de entorno
+│   └── docker-compose.yml        # Orquestación de PostgreSQL 16
+│
+├── erp-gelawitto-ui/             # Frontend SPA Desacoplado (Vue 3 + Vite + Tailwind CSS v4)
+│   ├── src/
 │   │   ├── Layouts/
-│   │   │   └── ErpLayout.vue     # Layout maestro con sidebar Mora, navbar blur y dark mode
+│   │   │   └── ErpLayout.vue     # Layout corporativo con barra lateral y modo oscuro
 │   │   ├── Pages/
-│   │   │   ├── Auth/
-│   │   │   │   └── Login.vue     # Login Split-Screen con control de intentos y modo oscuro
-│   │   │   └── Erp/              # Vistas interactivas de los 7 módulos + Dashboard
-│   │   └── app.ts                # Punto de entrada de Vue 3 + Inertia
-│   └── views/
-│       └── app.blade.php         # Plantilla raíz HTML y carga de fuentes
-├── routes/
-│   └── web.php                   # Rutas web autenticadas conectadas a cada controlador modular
-├── tests/
-│   ├── Feature/                  # Pruebas de integración en PHPUnit (ModularArchitectureTest)
-│   └── tema.test.ts              # Pruebas de diseño en Vitest
-├── .env.example                  # Plantilla de configuración de entorno
-└── docker-compose.yml            # Orquestación de PostgreSQL 16 en puerto 5433
+│   │   │   ├── Auth/Login.vue    # Portal de acceso Split-Screen
+│   │   │   └── Erp/              # Vistas de módulos (Dashboard, Catalogos, Compras, etc.)
+│   │   ├── navigation/vertical/  # Menú lateral modular dividido por dominios
+│   │   ├── plugins/axios.ts      # Instancia centralizada de Axios (@axios) e interceptores
+│   │   ├── router/index.ts       # Enrutador Vue Router con carga dinámica
+│   │   └── services/
+│   │       ├── api.ts            # Cliente de sincronización con el Backend
+│   │       └── apiService.ts     # Factoría de servicios REST por recurso
+│   ├── .env.development          # Configuración de entorno local
+│   ├── .env.production           # Configuración de entorno productivo
+│   └── vite.config.ts            # Configuración de Vite 8 y alias de módulos
+│
+└── docs/                         # Documentación Técnica y Manual de Usuario (.docx)
+    ├── Manual_de_Usuario_ERP_Gelawitto.docx
+    ├── entregable/
+    └── images/
 ```
