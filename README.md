@@ -24,9 +24,9 @@ Construido bajo una arquitectura empresarial modular en capas con **Laravel**, *
 
 ---
 
-## Guía Rápida para Principiantes: ¿Cómo instalar y correr el sistema desde cero?
+## Guía Rápida de Instalación y Puesta en Marcha (Desde Cero)
 
-Si acabas de clonar o descargar este proyecto y no tienes mucha experiencia configurando servidores o entornos de programación, **esta guía te llevará de la mano paso a paso**.
+Instrucciones directas paso a paso para clonar, configurar y ejecutar Gelawitto ERP en cualquier computadora:
 
 ### 1. Programas que necesitas instalar primero (Solo una vez)
 Descarga e instala estas herramientas gratuitas en tu computadora:
@@ -134,7 +134,7 @@ Inicia sesión con cualquiera de las cuentas creadas por el sistema:
 ## Tabla de Contenidos
 
 1. [Acerca de la Empresa Gelawitto](#acerca-de-la-empresa-gelawitto-artesanal)
-2. [Guía Rápida para Principiantes](#guía-rápida-para-principiantes-cómo-instalar-y-correr-el-sistema-desde-cero)
+2. [Guía Rápida de Instalación y Puesta en Marcha](#guía-rápida-de-instalación-y-puesta-en-marcha-desde-cero)
 3. [Equipo de Desarrollo](#equipo-de-desarrollo)
 4. [Arquitectura y Stack Tecnológico](#1-arquitectura-y-stack-tecnológico)
 5. [Identidad Visual y Paleta de Colores](#2-identidad-visual-y-paleta-de-colores)
