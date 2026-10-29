@@ -6,7 +6,11 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test": "vitest run"
+        "test": "vitest run",
+        "ui:install": "npm --prefix erp-gelawitto-ui install",
+        "ui:dev": "npm --prefix erp-gelawitto-ui run dev",
+        "ui:build": "npm --prefix erp-gelawitto-ui run build",
+        "dev:all": "concurrently -k -p \"[{name}]\" -n \"backend,frontend-ui\" -c \"blue.bold,magenta.bold\" \"php artisan serve --port=8000\" \"npm --prefix erp-gelawitto-ui run dev\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

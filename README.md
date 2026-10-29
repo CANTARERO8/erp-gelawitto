@@ -92,14 +92,33 @@ Ejecuta este comando para construir todas las tablas y cargar recetas, helados, 
 php artisan migrate:fresh --seed
 ```
 
-#### Paso 7: Compilar la interfaz visual y encender el servidor
-Compila los estilos y vistas:
+#### Paso 7: Encender el sistema
+
+Tienes dos modalidades disponibles incluidas en este mismo proyecto:
+
+**Modalidad A: Sistema Integrado (Backend + Interfaz Inertia en puerto 8000)**
 ```bash
 npm run build
-```
-Y arranca el servidor web:
-```bash
 php artisan serve
+```
+
+**Modalidad B: Frontend Desacoplado SPA (`erp-gelawitto-ui` en puerto 5174 y API en 8000)**
+Para correr ambos servidores en simultáneo con un solo comando:
+```bash
+npm run dev:all
+```
+O de manera individual en terminales separadas:
+- Terminal 1 (Backend API):
+  ```bash
+  php artisan serve --port=8000
+  ```
+- Terminal 2 (Frontend `erp-gelawitto-ui`):
+  ```bash
+  npm run ui:dev
+  ```
+Para compilar la versión estática de producción del frontend:
+```bash
+npm run ui:build
 ```
 
 ---
