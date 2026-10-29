@@ -12,7 +12,7 @@ Construido bajo una arquitectura empresarial modular en capas con **Laravel**, *
 
 ---
 
-## 🍨 Acerca de la Empresa: Gelawitto Artesanal
+## Acerca de la Empresa: Gelawitto Artesanal
 
 **Gelawitto** es una empresa nicaragüense dedicada a la fabricación artesanal y comercialización de gelato italiano y sorbetes de fruta natural. El negocio abarca toda la cadena de valor de la industria de helados:
 
@@ -24,7 +24,7 @@ Construido bajo una arquitectura empresarial modular en capas con **Laravel**, *
 
 ---
 
-## 🚀 Guía Rápida para Principiantes: ¿Cómo instalar y correr el sistema desde cero?
+## Guía Rápida para Principiantes: ¿Cómo instalar y correr el sistema desde cero?
 
 Si acabas de clonar o descargar este proyecto y no tienes mucha experiencia configurando servidores o entornos de programación, **esta guía te llevará de la mano paso a paso**.
 
@@ -61,7 +61,7 @@ cd erp-gelawitto
 
 #### Paso 3: Configurar la base de datos en pgAdmin 4
 1. Abre **pgAdmin 4**.
-2. Da clic derecho en **Databases** ➔ **Create** ➔ **Database...**
+2. Da clic derecho en **Databases** -> **Create** -> **Database...**
 3. Escribe de nombre: `gelawitto_erp` y da clic en **Save**.
 4. Abre el archivo `.env` en la raíz del proyecto (con Bloc de Notas o VS Code) y verifica que tenga tus credenciales de PostgreSQL:
    ```env
@@ -107,7 +107,7 @@ php artisan serve
 ### 3. ¿Cómo entrar al sistema?
 
 Abre tu navegador (Chrome, Edge, Firefox, Brave) y entra a:
-👉 **[http://localhost:8000](http://localhost:8000)**
+**[http://localhost:8000](http://localhost:8000)**
 
 Inicia sesión con cualquiera de las cuentas creadas por el sistema:
 
@@ -133,8 +133,8 @@ Inicia sesión con cualquiera de las cuentas creadas por el sistema:
 
 ## Tabla de Contenidos
 
-1. [Acerca de la Empresa Gelawitto](#-acerca-de-la-empresa-gelawitto-artesanal)
-2. [Guía Rápida para Principiantes](#-guía-rápida-para-principiantes-cómo-instalar-y-correr-el-sistema-desde-cero)
+1. [Acerca de la Empresa Gelawitto](#acerca-de-la-empresa-gelawitto-artesanal)
+2. [Guía Rápida para Principiantes](#guía-rápida-para-principiantes-cómo-instalar-y-correr-el-sistema-desde-cero)
 3. [Equipo de Desarrollo](#equipo-de-desarrollo)
 4. [Arquitectura y Stack Tecnológico](#1-arquitectura-y-stack-tecnológico)
 5. [Identidad Visual y Paleta de Colores](#2-identidad-visual-y-paleta-de-colores)
@@ -347,7 +347,7 @@ Tienes dos formas de correr el programa:
   ```
 
 Una vez iniciado, abre tu navegador web en:
-👉 **`http://localhost:8000`**
+**`http://localhost:8000`**
 
 ---
 
