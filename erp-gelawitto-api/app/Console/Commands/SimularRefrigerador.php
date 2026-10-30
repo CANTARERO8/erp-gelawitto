@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Repositories\Configuracion\ParametrosRepository;
 use App\Services\Iiot\IiotService;
 use Illuminate\Console\Command;
 
@@ -14,13 +15,14 @@ class SimularRefrigerador extends Command
 
     protected $description = 'Simula el sensor de temperatura del refrigerador (DS18B20 + ESP32) y envía las lecturas al servicio IIoT.';
 
-    public function handle(IiotService $iiotService): int
+    public function handle(IiotService $iiotService, ParametrosRepository $parametrosRepository): int
     {
         $lecturas = max(1, (int) $this->option('lecturas'));
         $intervalo = max(0, (int) $this->option('intervalo'));
         $excursion = (bool) $this->option('excursion');
 
-        $this->info("Simulador de refrigerador: {$lecturas} lecturas, dispositivo ".config('iiot.refrigerador.codigo').'.');
+        $dispositivo = $parametrosRepository->valor('refrigerador_codigo', 'REF-01');
+        $this->info("Simulador de refrigerador: {$lecturas} lecturas, dispositivo {$dispositivo}.");
 
         for ($i = 1; $i <= $lecturas; $i++) {
             // Operación normal alrededor de 4 °C, con variación de ±0.8 °C.

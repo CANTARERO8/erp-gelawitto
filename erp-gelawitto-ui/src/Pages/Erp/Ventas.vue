@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { useFormulario } from '@/composables/useFormulario';
+import { useAuth } from '@/composables/useAuth';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
 const props = defineProps<{
@@ -48,9 +49,14 @@ const props = defineProps<{
         diferencia: string;
         estado: string;
     }>;
+    iva_porcentaje?: number;
 }>();
 
-const formVenta = useForm({
+const { ivaPorcentaje } = useAuth();
+const porcentajeIva = computed(() => Number(props.iva_porcentaje ?? ivaPorcentaje.value));
+const tasaIva = computed(() => porcentajeIva.value / 100);
+
+const formVenta = useFormulario({
     cliente_id: props.clientes[0]?.id ?? 1,
     metodo_pago: 'Efectivo',
     aplicar_iva: false,
@@ -62,13 +68,13 @@ const formVenta = useForm({
     ],
 });
 
-const formAbrirCaja = useForm({
+const formAbrirCaja = useFormulario({
     accion: 'abrir',
     monto_inicial: '3500.00',
     observaciones: 'Apertura de vitrina principal',
 });
 
-const formCerrarCaja = useForm({
+const formCerrarCaja = useFormulario({
     accion: 'cerrar',
     monto_declarado: props.turnoActivo?.monto_esperado ?? '3500.00',
     observaciones: 'Cierre y arqueo conforme',
@@ -92,7 +98,7 @@ function stockDisponibleDe(p: { stock_actual: string; stock_disponible?: string 
 }
 
 const subtotalVenta = computed(() => {
-    return formVenta.lineas.reduce((acc, linea) => {
+    return formVenta.lineas.reduce((acc: number, linea: any) => {
         const prod = props.productos.find((p) => p.id === Number(linea.producto_id));
         const precio = Number(prod?.precio_venta ?? 0);
         return acc + precio * Number(linea.cantidad || 0);
@@ -100,7 +106,7 @@ const subtotalVenta = computed(() => {
 });
 
 const ivaVenta = computed(() => {
-    return formVenta.aplicar_iva ? subtotalVenta.value * 0.15 : 0;
+    return formVenta.aplicar_iva ? subtotalVenta.value * tasaIva.value : 0;
 });
 
 const totalVenta = computed(() => {
@@ -131,11 +137,9 @@ function cerrarTurno() {
 </script>
 
 <template>
-    <Head title="Ventas y Turno de Caja" />
-
     <ErpLayout
         title="Punto de Venta y Control de Caja"
-        subtitle="Facturación multi-ítem con validación de cuarentena de Calidad, IVA (15%), crédito a mayoristas y corte de caja"
+        :subtitle="`Facturación multi-ítem con validación de cuarentena de Calidad, IVA (${porcentajeIva}%), crédito a mayoristas y corte de caja`"
     >
         <!-- Estado actual del turno de caja -->
         <section class="rounded-lg bg-surface border border-border p-5">

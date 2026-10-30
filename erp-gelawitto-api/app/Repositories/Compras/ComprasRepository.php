@@ -4,6 +4,7 @@ namespace App\Repositories\Compras;
 
 use App\Models\Compras\OrdenCompra;
 use App\Models\Compras\OrdenCompraLinea;
+use App\Repositories\Configuracion\ParametrosRepository;
 use Illuminate\Database\Eloquent\Collection;
 
 class ComprasRepository
@@ -17,8 +18,7 @@ class ComprasRepository
 
     public function getNextFolio(): string
     {
-        $consecutivo = OrdenCompra::count() + 1;
-        return sprintf('OC-2026-%04d', $consecutivo);
+        return ParametrosRepository::siguienteFolio('folio_compras_seq', 'OC-2026-%04d', 'ordenes_compra', 'folio');
     }
 
     public function findOrdenForUpdate(int $id): OrdenCompra

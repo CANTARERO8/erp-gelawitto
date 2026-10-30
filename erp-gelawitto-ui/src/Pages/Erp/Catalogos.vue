@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { useFormulario } from '@/composables/useFormulario';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
 const props = defineProps<{
@@ -50,7 +50,7 @@ const props = defineProps<{
 
 const activeTab = ref<'productos' | 'insumos' | 'proveedores' | 'clientes'>('productos');
 
-const formProducto = useForm({
+const formProducto = useFormulario({
     sku: '',
     nombre: '',
     sabor: 'Fresa',
@@ -60,7 +60,7 @@ const formProducto = useForm({
     stock_minimo: '8',
 });
 
-const formInsumo = useForm({
+const formInsumo = useFormulario({
     codigo: '',
     nombre: '',
     categoria: 'Lácteos',
@@ -69,7 +69,7 @@ const formInsumo = useForm({
     costo_promedio: '65.00',
 });
 
-const formProveedor = useForm({
+const formProveedor = useFormulario({
     nombre: '',
     ruc_nit: '',
     contacto: '',
@@ -78,7 +78,7 @@ const formProveedor = useForm({
     direccion: '',
 });
 
-const formCliente = useForm({
+const formCliente = useFormulario({
     nombre: '',
     identificacion: '',
     telefono: '+505 ',
@@ -112,8 +112,6 @@ function guardarCliente() {
 </script>
 
 <template>
-    <Head title="Catálogos Maestros" />
-
     <ErpLayout
         title="Catálogos Maestros"
         subtitle="Administración centralizada de productos terminados, materia prima, proveedores y cartera de clientes en Córdobas (C$)"

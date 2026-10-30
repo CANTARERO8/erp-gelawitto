@@ -38,7 +38,7 @@ class ComprasRecepcionTest extends TestCase
             'insumo_id' => $this->insumo->id,
             'cantidad' => 4,
             'costo_unitario' => 3,
-        ])->assertSessionHasNoErrors();
+        ])->assertCreated();
 
         $orden = OrdenCompra::latest('id')->firstOrFail();
 
@@ -59,13 +59,13 @@ class ComprasRecepcionTest extends TestCase
             'insumo_id' => $this->insumo->id,
             'cantidad' => 2,
             'costo_unitario' => 5,
-        ]);
+        ])->assertCreated();
         $orden = OrdenCompra::latest('id')->firstOrFail();
 
         $this->actingAs($this->admin)->post("/compras/{$orden->id}/recibir", [
             'modalidad_pago' => 'Pendiente',
             'notas' => 'Factura 1234',
-        ])->assertSessionHasNoErrors();
+        ])->assertOk();
 
         $orden->refresh();
         $this->assertEquals('Recibida', $orden->estado);
@@ -87,16 +87,16 @@ class ComprasRecepcionTest extends TestCase
             'insumo_id' => $this->insumo->id,
             'cantidad' => 1,
             'costo_unitario' => 2,
-        ]);
+        ])->assertCreated();
         $orden = OrdenCompra::latest('id')->firstOrFail();
 
         $this->actingAs($this->admin)->post("/compras/{$orden->id}/recibir", ['modalidad_pago' => 'Pagado'])
-            ->assertSessionHasNoErrors();
+            ->assertOk();
 
         $stockTrasPrimera = (float) $this->insumo->fresh()->stock_actual;
 
         $this->actingAs($this->admin)->post("/compras/{$orden->id}/recibir", ['modalidad_pago' => 'Pagado'])
-            ->assertSessionHasErrors('orden');
+            ->assertJsonValidationErrors('orden');
 
         $this->assertEquals($stockTrasPrimera, (float) $this->insumo->fresh()->stock_actual);
     }

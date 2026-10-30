@@ -5,6 +5,7 @@ namespace App\Services\Ventas;
 use App\Models\Ventas\CajaTurno;
 use App\Models\Ventas\Venta;
 use App\Repositories\Catalogos\CatalogosRepository;
+use App\Repositories\Configuracion\ParametrosRepository;
 use App\Repositories\Finanzas\FinanzasRepository;
 use App\Repositories\Inventario\InventarioRepository;
 use App\Repositories\Ventas\VentasRepository;
@@ -21,9 +22,11 @@ class VentasService
         protected InventarioRepository $inventarioRepository,
         protected FinanzasRepository $finanzasRepository,
         protected SeguridadService $seguridadService,
-        protected ?ContabilidadService $contabilidadService = null
+        protected ?ContabilidadService $contabilidadService = null,
+        protected ?ParametrosRepository $parametrosRepository = null
     ) {
         $this->contabilidadService ??= app(ContabilidadService::class);
+        $this->parametrosRepository ??= app(ParametrosRepository::class);
     }
 
     public function registrarVenta(array $data, int $actorId, ?string $ip): Venta
@@ -92,7 +95,8 @@ class VentasService
             $subtotal = round($subtotal, 2);
             $costoTotalVenta = round($costoTotalVenta, 2);
             $aplicarIva = ! empty($data['aplicar_iva']);
-            $impuestos = $aplicarIva ? round($subtotal * 0.15, 2) : 0.00;
+            $tasaIva = $this->parametrosRepository->tasaIva();
+            $impuestos = $aplicarIva ? round($subtotal * $tasaIva, 2) : 0.00;
             $total = round($subtotal + $impuestos, 2);
 
             $folio = $this->ventasRepository->getNextFolioVenta();

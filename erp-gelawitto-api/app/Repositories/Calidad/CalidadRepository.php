@@ -5,6 +5,7 @@ namespace App\Repositories\Calidad;
 use App\Models\Calidad\ControlCalidad;
 use App\Models\Inventario\MovimientoInventario;
 use App\Models\Produccion\LoteProduccion;
+use App\Repositories\Configuracion\ParametrosRepository;
 use Illuminate\Database\Eloquent\Collection;
 
 class CalidadRepository
@@ -30,8 +31,7 @@ class CalidadRepository
 
     public function getNextCodigoControl(): string
     {
-        $consecutivo = ControlCalidad::count() + 1;
-        return sprintf('CC-2026-%03d', $consecutivo);
+        return ParametrosRepository::siguienteFolio('folio_calidad_seq', 'CC-2026-%03d', 'controles_calidad', 'codigo_control');
     }
 
     public function createControl(array $data): ControlCalidad

@@ -5,6 +5,7 @@ namespace App\Services\Compras;
 use App\Models\Compras\OrdenCompra;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Compras\ComprasRepository;
+use App\Repositories\Configuracion\ParametrosRepository;
 use App\Repositories\Finanzas\FinanzasRepository;
 use App\Repositories\Inventario\InventarioRepository;
 use App\Services\Finanzas\ContabilidadService;
@@ -20,8 +21,11 @@ class ComprasService
         protected InventarioRepository $inventarioRepository,
         protected FinanzasRepository $finanzasRepository,
         protected SeguridadService $seguridadService,
-        protected ContabilidadService $contabilidadService
-    ) {}
+        protected ContabilidadService $contabilidadService,
+        protected ?ParametrosRepository $parametrosRepository = null
+    ) {
+        $this->parametrosRepository ??= app(ParametrosRepository::class);
+    }
 
     /**
      * Paso 1: registra la orden de compra al proveedor (1 o múltiples líneas). No mueve stock ni finanzas.
@@ -58,7 +62,8 @@ class ComprasService
             }
 
             $subtotalOrden = round($subtotalOrden, 2);
-            $impuestos = ! empty($data['aplicar_iva']) ? round($subtotalOrden * 0.15, 2) : 0.00;
+            $tasaIva = $this->parametrosRepository->tasaIva();
+            $impuestos = ! empty($data['aplicar_iva']) ? round($subtotalOrden * $tasaIva, 2) : 0.00;
             $total = round($subtotalOrden + $impuestos, 2);
             $folio = $this->comprasRepository->getNextFolio();
 

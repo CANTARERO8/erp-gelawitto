@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
-import { defineComponent, h, onMounted, watch, type Component } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { fetchErpPage } from '@/services/api';
-import { pageState, registerSpaNavigator } from '@/adapters/inertia-spa';
+import { createRouter, createWebHistory, createMemoryHistory, useRouter, type RouteRecordRaw } from 'vue-router';
+import { defineComponent, h, onMounted, onUnmounted, ref, type Component } from 'vue';
+import apiService from '@/services/apiService';
+import { cargarSesion, limpiarSesion, notificarError, useAuth } from '@/composables/useAuth';
+import { registrarRecargaVista } from '@/composables/useFormulario';
 
 import Login from '@/Pages/Auth/Login.vue';
 import Dashboard from '@/Pages/Erp/Dashboard.vue';
@@ -15,91 +15,156 @@ import Ventas from '@/Pages/Erp/Ventas.vue';
 import Finanzas from '@/Pages/Erp/Finanzas.vue';
 import Seguridad from '@/Pages/Erp/Seguridad.vue';
 
-const componentMap: Record<string, Component> = {
-    'Auth/Login': Login,
-    'Erp/Dashboard': Dashboard,
-    'Erp/Catalogos': Catalogos,
-    'Erp/Compras': Compras,
-    'Erp/Inventario': Inventario,
-    'Erp/Produccion': Produccion,
-    'Erp/Calidad': Calidad,
-    'Erp/Ventas': Ventas,
-    'Erp/Finanzas': Finanzas,
-    'Erp/Seguridad': Seguridad,
-};
+export const cargandoVista = ref(false);
 
-const SpaRouteHost = defineComponent({
-    name: 'SpaRouteHost',
-    setup() {
-        const route = useRoute();
-        const vueRouter = useRouter();
+function crearVistaErp(endpoint: string, titulo: string, Componente: Component) {
+    return defineComponent({
+        name: `Vista_${endpoint}`,
+        setup() {
+            const router = useRouter();
+            const datos = ref<Record<string, any> | null>(null);
+            let cancelarSuscripcion: (() => void) | null = null;
 
-        registerSpaNavigator(async (targetUrl: string) => {
-            if (route.fullPath !== targetUrl) {
-                await vueRouter.push(targetUrl);
-            }
-        });
-
-        async function loadRouteData(path: string) {
-            pageState.loading = true;
-            try {
-                const payload = await fetchErpPage(path);
-                pageState.component = payload.component;
-                pageState.props = payload.props;
-                pageState.url = payload.url;
-
-                if (payload.url && payload.url !== path) {
-                    await vueRouter.replace(payload.url);
-                }
-            } finally {
-                pageState.loading = false;
-            }
-        }
-
-        onMounted(() => {
-            if (pageState.url !== route.fullPath || !pageState.component) {
-                loadRouteData(route.fullPath);
-            }
-        });
-
-        watch(
-            () => route.fullPath,
-            (newPath) => {
-                if (pageState.url !== newPath || !pageState.component) {
-                    loadRouteData(newPath);
+            async function cargarDatos() {
+                cargandoVista.value = true;
+                try {
+                    const respuesta = await apiService(endpoint).get();
+                    datos.value = respuesta ?? {};
+                } catch (error: any) {
+                    const status = error?.response?.status;
+                    if (status === 401) {
+                        limpiarSesion();
+                        await router.replace('/login');
+                    } else if (status === 403) {
+                        notificarError(error?.response?.data?.message || 'No tiene permisos para acceder a este módulo.');
+                        await router.replace('/dashboard');
+                    }
+                } finally {
+                    cargandoVista.value = false;
                 }
             }
-        );
 
-        return () => {
-            const ActivePage = componentMap[pageState.component];
-            if (!ActivePage) {
-                return h(
-                    'div',
-                    { class: 'min-h-screen flex items-center justify-center bg-background text-muted-foreground text-sm' },
-                    'Sincronizando módulo con Gelawitto API...'
-                );
-            }
-            return h(ActivePage, pageState.props);
-        };
-    },
-});
+            onMounted(() => {
+                document.title = `${titulo} | Gelawitto ERP`;
+                cargarDatos();
+                cancelarSuscripcion = registrarRecargaVista(cargarDatos);
+            });
+
+            onUnmounted(() => {
+                if (cancelarSuscripcion) {
+                    cancelarSuscripcion();
+                }
+            });
+
+            return () => {
+                if (!datos.value) {
+                    return h(
+                        'div',
+                        { class: 'min-h-screen flex items-center justify-center bg-background text-muted-foreground text-sm' },
+                        'Sincronizando módulo con Gelawitto API...'
+                    );
+                }
+                return h(Componente, datos.value);
+            };
+        },
+    });
+}
 
 const routes: RouteRecordRaw[] = [
     { path: '/', redirect: '/dashboard' },
-    { path: '/login', name: 'login', component: SpaRouteHost },
-    { path: '/dashboard', name: 'dashboard', component: SpaRouteHost },
-    { path: '/catalogos', name: 'catalogos', component: SpaRouteHost },
-    { path: '/compras', name: 'compras', component: SpaRouteHost },
-    { path: '/inventario', name: 'inventario', component: SpaRouteHost },
-    { path: '/produccion', name: 'produccion', component: SpaRouteHost },
-    { path: '/calidad', name: 'calidad', component: SpaRouteHost },
-    { path: '/ventas', name: 'ventas', component: SpaRouteHost },
-    { path: '/finanzas', name: 'finanzas', component: SpaRouteHost },
-    { path: '/seguridad', name: 'seguridad', component: SpaRouteHost },
+    {
+        path: '/login',
+        name: 'login',
+        meta: { requiereAuth: false },
+        component: crearVistaErp('login', 'Iniciar sesión', Login),
+    },
+    {
+        path: '/dashboard',
+        name: 'dashboard',
+        meta: { requiereAuth: true, claveModulo: 'dashboard' },
+        component: crearVistaErp('dashboard', 'Tablero Principal', Dashboard),
+    },
+    {
+        path: '/catalogos',
+        name: 'catalogos',
+        meta: { requiereAuth: true, claveModulo: 'catalogos' },
+        component: crearVistaErp('catalogos', 'Catálogos Maestros', Catalogos),
+    },
+    {
+        path: '/compras',
+        name: 'compras',
+        meta: { requiereAuth: true, claveModulo: 'compras' },
+        component: crearVistaErp('compras', 'Compras a Proveedores', Compras),
+    },
+    {
+        path: '/inventario',
+        name: 'inventario',
+        meta: { requiereAuth: true, claveModulo: 'inventario' },
+        component: crearVistaErp('inventario', 'Inventario y Kardex', Inventario),
+    },
+    {
+        path: '/produccion',
+        name: 'produccion',
+        meta: { requiereAuth: true, claveModulo: 'produccion' },
+        component: crearVistaErp('produccion', 'Recetas y Producción', Produccion),
+    },
+    {
+        path: '/calidad',
+        name: 'calidad',
+        meta: { requiereAuth: true, claveModulo: 'calidad' },
+        component: crearVistaErp('calidad', 'Calidad y Trazabilidad', Calidad),
+    },
+    {
+        path: '/ventas',
+        name: 'ventas',
+        meta: { requiereAuth: true, claveModulo: 'ventas' },
+        component: crearVistaErp('ventas', 'Ventas y Turno de Caja', Ventas),
+    },
+    {
+        path: '/finanzas',
+        name: 'finanzas',
+        meta: { requiereAuth: true, claveModulo: 'finanzas' },
+        component: crearVistaErp('finanzas', 'Finanzas y Contabilidad', Finanzas),
+    },
+    {
+        path: '/seguridad',
+        name: 'seguridad',
+        meta: { requiereAuth: true, claveModulo: 'seguridad' },
+        component: crearVistaErp('seguridad', 'Usuarios y Auditoría', Seguridad),
+    },
 ];
 
 export const spaRouter = createRouter({
-    history: createWebHistory(),
+    history: typeof window !== 'undefined' ? createWebHistory() : createMemoryHistory(),
     routes,
 });
+
+spaRouter.beforeEach(async (to) => {
+    const usuario = await cargarSesion();
+    const { modulos } = useAuth();
+
+    if (to.meta.requiereAuth === false) {
+        if (usuario) {
+            return '/dashboard';
+        }
+        return true;
+    }
+
+    if (!usuario) {
+        return '/login';
+    }
+
+    const claveModulo = to.meta.claveModulo as string | undefined;
+    if (claveModulo && modulos.value.length > 0) {
+        const permitido = modulos.value.some((m) => m.clave === claveModulo);
+        if (!permitido) {
+            notificarError('Su rol operativo no tiene permiso para acceder a esa sección.');
+            return '/dashboard';
+        }
+    }
+
+    return true;
+});
+
+export default spaRouter;
+

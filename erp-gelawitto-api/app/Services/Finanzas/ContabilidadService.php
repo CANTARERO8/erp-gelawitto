@@ -4,39 +4,11 @@ namespace App\Services\Finanzas;
 
 use App\Models\Finanzas\AsientoContable;
 use App\Models\Finanzas\CuentaContable;
+use App\Repositories\Configuracion\ParametrosRepository;
 use Illuminate\Support\Facades\Schema;
 
 class ContabilidadService
 {
-    public const CATALOGO_BASE = [
-        ['codigo' => '1101', 'nombre' => 'Caja y Bancos (Efectivo y Equivalentes)', 'tipo' => 'Activo', 'naturaleza' => 'Deudora'],
-        ['codigo' => '1102', 'nombre' => 'Cuentas por Cobrar Clientes', 'tipo' => 'Activo', 'naturaleza' => 'Deudora'],
-        ['codigo' => '1103', 'nombre' => 'IVA Acreditable (15%)', 'tipo' => 'Activo', 'naturaleza' => 'Deudora'],
-        ['codigo' => '1104', 'nombre' => 'Inventario de Materia Prima e Insumos', 'tipo' => 'Activo', 'naturaleza' => 'Deudora'],
-        ['codigo' => '1105', 'nombre' => 'Inventario de Producto Terminado (Helados)', 'tipo' => 'Activo', 'naturaleza' => 'Deudora'],
-        ['codigo' => '2101', 'nombre' => 'Cuentas por Pagar Proveedores', 'tipo' => 'Pasivo', 'naturaleza' => 'Acreedora'],
-        ['codigo' => '2102', 'nombre' => 'IVA por Pagar (15%)', 'tipo' => 'Pasivo', 'naturaleza' => 'Acreedora'],
-        ['codigo' => '3101', 'nombre' => 'Capital Social y Patrimonio Inicial', 'tipo' => 'Patrimonio', 'naturaleza' => 'Acreedora'],
-        ['codigo' => '4101', 'nombre' => 'Ingresos por Ventas de Helados', 'tipo' => 'Ingreso', 'naturaleza' => 'Acreedora'],
-        ['codigo' => '5101', 'nombre' => 'Costo de Ventas de Producción', 'tipo' => 'Costo', 'naturaleza' => 'Deudora'],
-        ['codigo' => '5201', 'nombre' => 'Gastos Operativos de Planta', 'tipo' => 'Gasto', 'naturaleza' => 'Deudora'],
-        ['codigo' => '5202', 'nombre' => 'Pérdidas por Mermas y Scrap de Calidad', 'tipo' => 'Gasto', 'naturaleza' => 'Deudora'],
-    ];
-
-    public function asegurarCatalogoContable(): void
-    {
-        if (! Schema::hasTable('cuentas_contables')) {
-            return;
-        }
-
-        foreach (self::CATALOGO_BASE as $cuenta) {
-            CuentaContable::firstOrCreate(
-                ['codigo' => $cuenta['codigo']],
-                $cuenta
-            );
-        }
-    }
-
     /**
      * @param  array<int, array{codigo: string, descripcion: string, debe: float, haber: float}>  $partidas
      */
@@ -51,8 +23,6 @@ class ContabilidadService
             return null;
         }
 
-        $this->asegurarCatalogoContable();
-
         $partidasLimpias = array_values(array_filter($partidas, fn ($p) => round((float) $p['debe'], 2) > 0 || round((float) $p['haber'], 2) > 0));
         if (count($partidasLimpias) === 0) {
             return null;
@@ -61,13 +31,7 @@ class ContabilidadService
         $totalDebe = round(array_sum(array_map(fn ($p) => (float) $p['debe'], $partidasLimpias)), 2);
         $totalHaber = round(array_sum(array_map(fn ($p) => (float) $p['haber'], $partidasLimpias)), 2);
 
-        $consecutivo = AsientoContable::count() + 1;
-        $numeroAsiento = sprintf('ASI-2026-%04d', $consecutivo);
-
-        while (AsientoContable::where('numero_asiento', $numeroAsiento)->exists()) {
-            $consecutivo++;
-            $numeroAsiento = sprintf('ASI-2026-%04d', $consecutivo);
-        }
+        $numeroAsiento = ParametrosRepository::siguienteFolio('folio_asientos_seq', 'ASI-2026-%04d', 'asientos_contables', 'numero_asiento');
 
         $asiento = AsientoContable::create([
             'numero_asiento' => $numeroAsiento,
@@ -372,8 +336,6 @@ class ContabilidadService
                 ],
             ];
         }
-
-        $this->asegurarCatalogoContable();
 
         $asientos = AsientoContable::with(['partidas.cuenta', 'usuario'])
             ->orderByDesc('id')

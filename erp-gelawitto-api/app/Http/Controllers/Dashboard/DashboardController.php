@@ -8,8 +8,7 @@ use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Finanzas\FinanzasRepository;
 use App\Repositories\Inventario\InventarioRepository;
 use App\Repositories\Ventas\VentasRepository;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class DashboardController extends Controller
 {
@@ -20,7 +19,7 @@ class DashboardController extends Controller
         protected CatalogosRepository $catalogosRepository
     ) {}
 
-    public function index(): Response
+    public function index(): JsonResponse
     {
         $ventasHoy = $this->ventasRepository->getVentasHoyTotal();
         $ventasTotales = $this->ventasRepository->getVentasAcumuladasTotal();
@@ -37,7 +36,7 @@ class DashboardController extends Controller
                 'stock_minimo' => (string) $insumo->stock_minimo,
                 'unidad' => $insumo->unidad?->abreviatura ?? '',
             ];
-        });
+        })->values();
 
         $ultimosMovimientos = KardexResource::collection($this->inventarioRepository->getUltimosMovimientos(6))->resolve();
 
@@ -59,7 +58,7 @@ class DashboardController extends Controller
             ];
         })->sortByDesc('stock_actual')->values();
 
-        return Inertia::render('Erp/Dashboard', [
+        return response()->json([
             'kpis' => [
                 'ventas_hoy' => round($ventasHoy, 2),
                 'ventas_acumuladas' => round($ventasTotales, 2),

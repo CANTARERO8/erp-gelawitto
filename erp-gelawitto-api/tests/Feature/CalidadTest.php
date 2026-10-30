@@ -92,7 +92,7 @@ class CalidadTest extends TestCase
             'unidades_inspeccionadas' => 5,
             'unidades_no_conformes' => 0,
             'disposicion' => 'Liberación',
-        ])->assertSessionHasNoErrors();
+        ])->assertOk();
 
         $this->assertEquals('Liberado', $lote->fresh()->estado_calidad);
         $this->assertEquals(5.0, (float) $this->producto->fresh()->stock_actual);
@@ -108,7 +108,7 @@ class CalidadTest extends TestCase
             'unidades_no_conformes' => 1,
             'defecto' => 'Gelificación incompleta',
             'disposicion' => 'Scrap',
-        ])->assertSessionHasNoErrors();
+        ])->assertOk();
 
         $this->assertEquals('Scrap', $lote->fresh()->estado_calidad);
         $this->assertEquals(4.0, (float) $this->producto->fresh()->stock_actual);
@@ -131,7 +131,7 @@ class CalidadTest extends TestCase
             'unidades_no_conformes' => 2,
             'defecto' => 'Fuga de tapa',
             'disposicion' => 'Retrabajo',
-        ])->assertSessionHasNoErrors();
+        ])->assertOk();
 
         $this->assertEquals('Retrabajo', $lote->fresh()->estado_calidad);
         $this->assertEquals(3.0, (float) $this->producto->fresh()->stock_actual);
@@ -151,7 +151,7 @@ class CalidadTest extends TestCase
             'unidades_no_conformes' => 1,
             'defecto' => 'Sabor fuera de criterio',
             'disposicion' => 'Liberación',
-        ])->assertSessionHasErrors('disposicion');
+        ])->assertJsonValidationErrors('disposicion');
 
         $this->assertEquals('Pendiente', $lote->fresh()->estado_calidad);
         $this->assertEquals(5.0, (float) $this->producto->fresh()->stock_actual);
@@ -165,7 +165,7 @@ class CalidadTest extends TestCase
             'unidades_inspeccionadas' => 5,
             'unidades_no_conformes' => 1,
             'disposicion' => 'Scrap',
-        ])->assertSessionHasErrors('defecto');
+        ])->assertJsonValidationErrors('defecto');
     }
 
     public function test_sin_no_conformes_la_disposicion_debe_ser_liberacion(): void
@@ -176,7 +176,7 @@ class CalidadTest extends TestCase
             'unidades_inspeccionadas' => 5,
             'unidades_no_conformes' => 0,
             'disposicion' => 'Scrap',
-        ])->assertSessionHasErrors('disposicion');
+        ])->assertJsonValidationErrors('disposicion');
     }
 
     public function test_no_permite_una_segunda_inspeccion_del_mismo_lote(): void
@@ -187,13 +187,13 @@ class CalidadTest extends TestCase
             'unidades_inspeccionadas' => 5,
             'unidades_no_conformes' => 0,
             'disposicion' => 'Liberación',
-        ])->assertSessionHasNoErrors();
+        ])->assertOk();
 
         $this->actingAs($this->admin)->post("/calidad/lotes/{$lote->id}/inspeccion", [
             'unidades_inspeccionadas' => 5,
             'unidades_no_conformes' => 0,
             'disposicion' => 'Liberación',
-        ])->assertSessionHasErrors('lote');
+        ])->assertJsonValidationErrors('lote');
 
         $this->assertEquals(1, ControlCalidad::where('lote_id', $lote->id)->count());
     }
@@ -210,7 +210,7 @@ class CalidadTest extends TestCase
             'unidades_inspeccionadas' => 5,
             'unidades_no_conformes' => 0,
             'disposicion' => 'Liberación',
-        ])->assertSessionHasErrors('lote');
+        ])->assertJsonValidationErrors('lote');
     }
 
     public function test_scrap_no_puede_superar_el_stock_disponible(): void
@@ -223,7 +223,7 @@ class CalidadTest extends TestCase
             'unidades_no_conformes' => 1,
             'defecto' => 'Prueba de stock insuficiente',
             'disposicion' => 'Scrap',
-        ])->assertSessionHasErrors('unidades_no_conformes');
+        ])->assertJsonValidationErrors('unidades_no_conformes');
 
         $this->assertEquals('Pendiente', $lote->fresh()->estado_calidad);
         $this->assertEquals(0, DB::table('controles_calidad')->where('lote_id', $lote->id)->count());
@@ -235,11 +235,12 @@ class CalidadTest extends TestCase
 
         $this->actingAs($this->admin)->get('/calidad')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Erp/Calidad')
-                ->has('trazabilidad')
-                ->has('pendientes')
-            );
+            ->assertJsonStructure([
+                'trazabilidad',
+                'pendientes',
+                'lecturas',
+                'rango' => ['minimo', 'maximo', 'dispositivo'],
+            ]);
         $this->assertNotNull($lote->id);
     }
 }

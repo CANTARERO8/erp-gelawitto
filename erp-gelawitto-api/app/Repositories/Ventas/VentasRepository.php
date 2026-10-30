@@ -6,6 +6,7 @@ use App\Models\Produccion\LoteProduccion;
 use App\Models\Ventas\CajaTurno;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\VentaLinea;
+use App\Repositories\Configuracion\ParametrosRepository;
 use Illuminate\Database\Eloquent\Collection;
 
 class VentasRepository
@@ -63,14 +64,12 @@ class VentasRepository
 
     public function getNextFolioVenta(): string
     {
-        $consecutivo = Venta::count() + 1;
-        return sprintf('VTA-2026-%04d', $consecutivo);
+        return ParametrosRepository::siguienteFolio('folio_ventas_seq', 'VTA-2026-%04d', 'ventas', 'folio');
     }
 
     public function getNextCodigoTurno(): string
     {
-        $consecutivo = CajaTurno::count() + 1;
-        return sprintf('TUR-2026-%03d', $consecutivo);
+        return ParametrosRepository::siguienteFolio('folio_turnos_seq', 'TUR-2026-%03d', 'cajas_turnos', 'codigo_turno');
     }
 
     public function createVenta(array $ventaData, array $lineasData): Venta

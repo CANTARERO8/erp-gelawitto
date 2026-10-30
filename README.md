@@ -1,10 +1,10 @@
 # Gelawitto ERP
 
-Sistema integral de planificación de recursos empresariales para la heladería artesanal **Gelawitto**, diseñado para administrar catálogos maestros, compras a proveedores, inventario con libro de Kardex inmutable, formulación técnica y lotes de producción, punto de venta con control de turnos de caja, finanzas operativas con contabilidad de partida doble y auditoría de seguridad.
+Sistema integral de planificación de recursos empresariales para la heladería artesanal Gelawitto, diseñado para administrar catálogos maestros, compras a proveedores, inventario con libro de Kardex inmutable, formulación técnica y lotes de producción, punto de venta con control de turnos de caja, finanzas operativas con contabilidad de partida doble y auditoría de seguridad.
 
-Construido bajo una arquitectura empresarial modular en capas con **Laravel**, **Vue 3 (Inertia.js + TypeScript)**, **Tailwind CSS v4** y **PostgreSQL 16**, combinando el patrón arquitectónico de repositorios, servicios, recursos y validaciones por dominio con la identidad visual de Gelawitto.
+Construido bajo una arquitectura empresarial desacoplada en dos aplicaciones independientes: **`erp-gelawitto-api`** (Backend REST API en Laravel 11 con PostgreSQL 16) y **`erp-gelawitto-ui`** (Frontend SPA en Vue 3, Vite, Vue Router 4 y Tailwind CSS v4), siguiendo el estándar de Carnes San Martín (`SM_LOG_API` y `SM_LOG_UI`).
 
-> **Acceso Rápido al Sistema (`http://localhost:8000` | Contraseña general: `password123`)**  
+> **Acceso al Sistema (`http://localhost:5174` | Contraseña general: `password123`)**  
 > **Administrador:** `admin@gelawitto.com`  
 > **Producción:** `produccion@gelawitto.com`  
 > **Caja (POS):** `caja@gelawitto.com`  
@@ -14,12 +14,12 @@ Construido bajo una arquitectura empresarial modular en capas con **Laravel**, *
 
 ## Acerca de la Empresa: Gelawitto Artesanal
 
-**Gelawitto** es una empresa nicaragüense dedicada a la fabricación artesanal y comercialización de gelato italiano y sorbetes de fruta natural. El negocio abarca toda la cadena de valor de la industria de helados:
+Gelawitto es una empresa nicaragüense dedicada a la fabricación artesanal y comercialización de gelato italiano y sorbetes de fruta natural. El negocio abarca toda la cadena de valor de la industria de helados:
 
-1. **Abastecimiento y Proveedores:** Compra de materia prima local (leche entera, crema para batir, pulpas de fruta fresca, azúcares y vasos reciclables) con costos registrados en Córdobas Nicaragüenses (`C$`).
+1. **Abastecimiento y Proveedores:** Compra de materia prima local (leche entera, crema para batir, pulpas de fruta fresca, azúcares y empaques) con costos registrados en Córdobas Nicaragüenses (`C$`).
 2. **Formulación Técnica y Producción (BOM):** Estandarización de recetas maestras que calculan automáticamente la cantidad de insumos requeridos según el tamaño del lote, tiempos de maduración y mermas esperadas.
-3. **Control de Calidad y Cadena de Frío:** Los lotes producidos entran en cuarentena obligatoria (`Pendiente`) hasta que Control de Calidad los inspecciona y libera para la venta. Además, se registran lecturas de temperatura en congeladores industriales.
-4. **Punto de Venta (POS) y Mayoristas:** Ventas de mostrador al público general (efectivo, tarjeta, transferencia) y ventas a crédito para clientes comerciales (hoteles y restaurantes) con cálculo automático de IVA (15%).
+3. **Control de Calidad y Cadena de Frío:** Los lotes producidos entran en cuarentena obligatoria (`Pendiente`) hasta que Control de Calidad los inspecciona y libera para la venta. Además, se registran lecturas de temperatura en congeladores industriales monitoreadas por límites en la tabla de parámetros de PostgreSQL.
+4. **Punto de Venta (POS) y Mayoristas:** Ventas de mostrador al público general (efectivo, tarjeta, transferencia) y ventas a crédito para clientes comerciales (hoteles y restaurantes) con cálculo dinámico de IVA configurado en la tabla `parametros` de la base de datos.
 5. **Contabilidad General y Finanzas:** Registro automático de asientos contables de partida doble ($\sum \text{Debe} = \sum \text{Haber}$) en el Libro Diario, control de cuentas por cobrar y por pagar, Estado de Resultados y Balance General.
 
 ---
@@ -28,20 +28,17 @@ Construido bajo una arquitectura empresarial modular en capas con **Laravel**, *
 
 Instrucciones directas paso a paso para clonar, configurar y ejecutar Gelawitto ERP en cualquier computadora:
 
-### 1. Programas que necesitas instalar primero (Solo una vez)
-Descarga e instala estas herramientas gratuitas en tu computadora:
+### 1. Herramientas requeridas
 
-1. **Git:** [Descargar Git](https://git-scm.com/downloads) — *Para descargar y sincronizar el código.*
-2. **PHP 8.3 o superior:** [Descargar PHP](https://www.php.net/) — *El lenguaje del backend. Si usas Windows o Mac, la opción más fácil y recomendada es instalar [Laravel Herd](https://herd.laravel.com/) o [Laragon](https://laragon.org/).*
-3. **Composer:** [Descargar Composer](https://getcomposer.org/download/) — *El gestor de paquetes de PHP.*
-4. **Node.js (versión 20 o superior):** [Descargar Node.js](https://nodejs.org/) — *Incluye `npm`, necesario para compilar las pantallas visuales.*
-5. **PostgreSQL con pgAdmin 4:** [Descargar PostgreSQL](https://www.postgresql.org/download/) — *El motor donde se guardará la base de datos.*
+1. **Git:** Para descargar y sincronizar el código.
+2. **PHP 8.3 o superior:** Entorno del backend.
+3. **Composer:** Gestor de dependencias de PHP.
+4. **Node.js (versión 20 o superior):** Incluye `npm`, para compilar el frontend SPA.
+5. **PostgreSQL 16 con pgAdmin 4:** Motor de base de datos relacional.
 
 ---
 
-### 2. Pasos para poner a correr el ERP
-
-Abre tu terminal (**PowerShell** o **Símbolo del sistema** en Windows, o **Terminal** en Mac/Linux) y escribe los siguientes comandos en orden:
+### 2. Pasos para iniciar el sistema
 
 #### Paso 1: Clonar el repositorio
 ```bash
@@ -49,18 +46,22 @@ git clone https://github.com/CANTARERO8/erp-gelawitto.git
 cd erp-gelawitto
 ```
 
-#### Paso 2: Configurar la base de datos en pgAdmin 4
-1. Abre **pgAdmin 4**.
-2. Da clic derecho en **Databases** -> **Create** -> **Database...**
-3. Escribe de nombre: `gelawitto_erp` y da clic en **Save**.
+#### Paso 2: Configurar la base de datos en pgAdmin 4 o terminal
+Crear la base de datos `gelawitto_erp` en PostgreSQL:
+```sql
+CREATE DATABASE gelawitto_erp;
+```
+O bien restaurar directamente el respaldo exportado:
+```bash
+PGPASSWORD=secret psql -h 127.0.0.1 -p 5433 -U gelawitto -d gelawitto_erp < erp-gelawitto-api/database/gelawitto_erp.sql
+```
 
 #### Paso 3: Configurar e iniciar el Backend (`erp-gelawitto-api`)
-Entra a la carpeta del backend, crea el archivo `.env`, instala las librerías, ejecuta las migraciones con los datos iniciales y enciende el servidor en el puerto `8000`:
 ```bash
 cd erp-gelawitto-api
 cp .env.example .env
 ```
-Abre `erp-gelawitto-api/.env` y verifica tus credenciales de PostgreSQL (`DB_DATABASE=gelawitto_erp`, `DB_USERNAME=postgres`, `DB_PASSWORD=tu_contraseña`). Luego ejecuta:
+Verificar en `.env` las credenciales de PostgreSQL (`DB_DATABASE=gelawitto_erp`, `DB_USERNAME=gelawitto`, `DB_PASSWORD=...`, `DB_PORT=5433`). Luego ejecutar:
 ```bash
 composer install
 php artisan key:generate
@@ -69,25 +70,21 @@ php artisan serve --port=8000
 ```
 
 #### Paso 4: Configurar e iniciar el Frontend (`erp-gelawitto-ui`)
-Abre una **segunda terminal**, entra a la carpeta del frontend e inicia el servidor de desarrollo:
+En una segunda terminal:
 ```bash
 cd erp-gelawitto-ui
 npm install
 npm run dev
 ```
 
-*(Nota: Si prefieres correr la vista monolítica integrada directamente desde `erp-gelawitto-api` en el puerto `8000`, basta con ejecutar `npm install && npm run build` dentro de `erp-gelawitto-api`).*
-
 ---
 
-### 3. ¿Cómo entrar al sistema?
+### 3. Acceso a la interfaz gráfica
 
-Abre tu navegador (Chrome, Edge, Firefox, Brave) y entra a:
-**[http://localhost:8000](http://localhost:8000)**
+Abrir en el navegador:
+**`http://localhost:5174`**
 
-Inicia sesión con cualquiera de las cuentas creadas por el sistema:
-
-| Rol de Trabajo | Correo de Acceso | Contraseña | ¿Qué funciones tiene asignadas? |
+| Rol de Trabajo | Correo de Acceso | Contraseña | Funciones Asignadas |
 | :--- | :--- | :--- | :--- |
 | **Administrador General** | `admin@gelawitto.com` | `password123` | Control total del sistema, seguridad, usuarios y auditoría inmutable. |
 | **Jefe de Producción** | `produccion@gelawitto.com` | `password123` | Crear recetas, simulador MRP, programar lotes y control de calidad. |
@@ -129,14 +126,15 @@ Inicia sesión con cualquiera de las cuentas creadas por el sistema:
 
 ## 1. Arquitectura y Stack Tecnológico
 
-El sistema implementa una arquitectura modular desacoplada por dominios de negocio (`Catálogos`, `Compras`, `Inventario`, `Producción`, `Ventas`, `Finanzas`, `Seguridad` y `Dashboard`):
+El sistema implementa una arquitectura modular desacoplada por dominios de negocio:
 
-- **Backend y Reglas de Negocio:** Laravel con PHP 8.3+, estructurado en `Models`, `Repositories`, `Services`, `FormRequests`, `Resources` y `Controllers`. Implementa transacciones atómicas (`DB::transaction`) y bloqueo pesimista (`lockForUpdate`) en operaciones críticas de inventario y caja.
-- **Interfaz Reactiva:** Vue 3 (Composition API + TypeScript) acoplado monolíticamente mediante Inertia.js sin necesidad de mantener una API REST separada.
-- **Sistema de Diseño:** Tailwind CSS v4 con tokens personalizados y soporte nativo para modo claro y modo oscuro.
-- **Tipografías Institucionales:** Fredoka (titulares y encabezados) e Inter (cuerpo de texto, formularios y tablas financieras).
-- **Motor de Base de Datos:** PostgreSQL 16 (`postgres:16`) contenerizado en Docker con tipos numéricos exactos (`NUMERIC(12,2)` para moneda y `NUMERIC(12,3)` para pesaje e inventario).
-- **Aseguramiento de Calidad:** PHPUnit (pruebas de integración transaccionales sobre PostgreSQL 16) y Vitest (validación de tokens de diseño y componentes).
+- **Backend REST API (`erp-gelawitto-api`):** Laravel 11 con PHP 8.3+, estructurado en `Models`, `Repositories`, `Services`, `FormRequests`, `Resources` y `Controllers`. Devuelve exclusivamente respuestas estructuradas en formato `JsonResponse`. Implementa transacciones atómicas (`DB::transaction`) y bloqueo pesimista (`lockForUpdate`) en operaciones críticas.
+- **Folios Atómicos con Secuencias PostgreSQL:** Generación de folios mediante 7 secuencias nativas de base de datos (`folio_compras_seq`, `folio_lotes_seq`, `folio_ventas_seq`, `folio_turnos_seq`, `folio_finanzas_seq`, `folio_calidad_seq`, `folio_asientos_seq`), previniendo colisiones por concurrencia.
+- **Reglas de Negocio en PostgreSQL:** La tasa de IVA, las temperaturas del congelador y los permisos de navegación se cargan desde las tablas `parametros`, `roles`, `modulos` y `rol_modulo`.
+- **Frontend SPA Desacoplado (`erp-gelawitto-ui`):** Vue 3 (Composition API + TypeScript) montado con Vite y Vue Router 4, consumiendo los endpoints REST a través de Axios (`@axios`), `useAuth` y `useFormulario`.
+- **Sistema de Diseño:** Tailwind CSS v4 con tokens institucionales y soporte para modo claro y oscuro.
+- **Motor de Base de Datos:** PostgreSQL 16 con tipos numéricos exactos (`NUMERIC(12,2)` para moneda y `NUMERIC(12,3)` para pesaje e inventario). Respaldo oficial en `erp-gelawitto-api/database/gelawitto_erp.sql`.
+- **Aseguramiento de Calidad:** 45 pruebas transaccionales de backend en PHPUnit y 11 pruebas unitarias de frontend en Vitest.
 
 ---
 
@@ -388,7 +386,11 @@ El comando `php artisan migrate:fresh --seed` construye las siguientes tablas en
 
 | Tabla | Módulo | Descripción y Campos Clave |
 | :--- | :--- | :--- |
-| `users` | Seguridad | Operadores del sistema (`name`, `email`, `password`, `rol`, `activo`, `ultimo_acceso`). |
+| `parametros` | Configuración | Parámetros del sistema (`clave`, `valor`, `descripcion`): tasa de IVA (`15%`), límites de temperatura del sensor (`2.0` - `6.0 °C`). |
+| `roles` | Seguridad | Roles del sistema con descripción (`nombre`, `descripcion`): Administrador, Producción, Cajero, Contador. |
+| `modulos` | Seguridad | Módulos disponibles (`clave`, `nombre`, `ruta`, `seccion`, `orden`). |
+| `rol_modulo` | Seguridad | Tabla pivote de asignación de módulos autorizados por rol operativo. |
+| `users` | Seguridad | Operadores del sistema con clave foránea a roles (`name`, `email`, `password`, `rol_id`, `rol`, `activo`, `ultimo_acceso`). |
 | `bitacora_auditoria` | Seguridad | Registro inmutable de acciones críticas (`user_id`, `modulo`, `accion`, `descripcion`, `ip_address`). |
 | `unidades_medida` | Catálogos | Unidades estándar de pesaje y volumen (`nombre`, `abreviatura`: `kg`, `L`, `und`, `g`). |
 | `proveedores` | Catálogos | Directorio de suministros (`nombre`, `ruc_nit`, `contacto`, `telefono`, `correo`, `activo`). |
@@ -397,14 +399,19 @@ El comando `php artisan migrate:fresh --seed` construye las siguientes tablas en
 | `productos` | Catálogos / Inv. | Helados terminados (`sku`, `nombre`, `sabor`, `presentacion`, `precio_venta`, `costo_unitario`, `stock_actual`, `stock_minimo`). |
 | `ordenes_compra` | Compras | Cabecera de compras a proveedores (`folio`, `proveedor_id`, `user_id`, `fecha_emision`, `estado`, `total`). |
 | `orden_compra_lineas` | Compras | Detalle de insumos recibidos por orden (`orden_compra_id`, `insumo_id`, `cantidad`, `costo_unitario`, `subtotal`). |
-| `movimientos_inventario` | Inventario | **Libro Kardex inmutable** (`fecha`, `tipo_item`, `item_id`, `nombre_item`, `tipo_movimiento`, `referencia`, `cantidad`, `stock_resultante`, `costo_unitario`, `user_id`). |
+| `movimientos_inventario` | Inventario | Libro Kardex inmutable (`fecha`, `tipo_item`, `item_id`, `nombre_item`, `tipo_movimiento`, `referencia`, `cantidad`, `stock_resultante`, `costo_unitario`, `user_id`). |
 | `recetas` | Producción | Fichas técnicas de helado (`producto_id`, `nombre`, `rendimiento_unidades`, `tiempo_preparacion_min`, `instrucciones`). |
 | `receta_insumos` | Producción | Ingredientes por receta (`receta_id`, `insumo_id`, `cantidad_requerida`, `merma_estimada_porcentaje`). |
 | `lotes_produccion` | Producción | Corridas de fabricación (`codigo_lote`, `receta_id`, `producto_id`, `cantidad_programada`, `cantidad_obtenida`, `merma`, `costo_total_lote`, `costo_unitario_resultante`). |
+| `controles_calidad` | Calidad | Inspección de lotes (`codigo_control`, `lote_id`, `unidades_inspeccionadas`, `unidades_no_conformes`, `defecto`, `disposicion`, `costo_perdido`). |
+| `lecturas_temperatura` | Calidad / IIoT | Monitoreo de cadena de frío (`dispositivo`, `origen`, `temperatura`, `fuera_de_rango`). |
 | `cajas_turnos` | Ventas | Control de turnos de caja (`codigo_turno`, `user_id`, `monto_inicial`, `ventas_efectivo`, `ventas_tarjeta`, `ventas_transferencia`, `monto_esperado`, `monto_declarado`, `diferencia`, `estado`). |
 | `ventas` | Ventas | Tickets de punto de venta (`folio`, `caja_turno_id`, `cliente_id`, `user_id`, `metodo_pago`, `total`, `estado`). |
 | `venta_lineas` | Ventas | Partidas vendidas por ticket (`venta_id`, `producto_id`, `cantidad`, `precio_unitario`, `costo_unitario`, `subtotal`). |
 | `finanzas_movimientos` | Finanzas | Flujo de ingresos, egresos y cuentas por pagar (`folio`, `fecha`, `tipo`, `categoria`, `concepto`, `referencia`, `monto`, `estado`, `fecha_vencimiento`). |
+| `cuentas_contables` | Contabilidad | Catálogo general de cuentas contables (`codigo`, `nombre`, `tipo`, `naturaleza`). |
+| `asientos_contables` | Contabilidad | Libro Diario de partida doble (`numero_asiento`, `fecha`, `modulo_origen`, `referencia`, `concepto`, `total_debe`, `total_haber`). |
+| `partidas_asiento` | Contabilidad | Renglones de cargo y abono por asiento (`asiento_id`, `cuenta_contable_id`, `descripcion`, `debe`, `haber`). |
 
 ---
 
@@ -423,21 +430,19 @@ Por políticas de seguridad, la interfaz de inicio de sesión no expone contrase
 
 ## 9. Ejecución de Pruebas Automatizadas
 
-El proyecto cuenta con dos suites de pruebas automatizadas para verificar tanto el backend transaccional como la interfaz:
+El proyecto cuenta con dos suites de pruebas automatizadas para verificar el backend transaccional y la interfaz desacoplada:
 
-1. **Pruebas de Integración y Arquitectura en Backend (PHPUnit):**
-   Verifica autenticación, bloqueo por intentos fallidos, contratos JSON de Inertia en todos los módulos, compras con costo promedio ponderado, mermas en Kardex, lotes de producción, turnos de caja, liquidación financiera y auditoría (usando `DatabaseTransactions` para no ensuciar tus datos):
+1. **Pruebas de Integración y Arquitectura en Backend (PHPUnit en `erp-gelawitto-api`):**
+   Verifica autenticación, respuestas JSON de API, folios atómicos con secuencias de PostgreSQL, tasa de IVA y límites de refrigerador desde la tabla `parametros`, compras con costo promedio ponderado, mermas en Kardex, lotes de producción, turnos de caja, liquidación financiera, libro diario de partida doble y auditoría:
    ```bash
+   cd erp-gelawitto-api
    php artisan test
    ```
-   O con desglose detallado:
-   ```bash
-   ./vendor/bin/phpunit --testdox
-   ```
 
-2. **Pruebas de Identidad Visual y Frontend (Vitest):**
-   Verifica la paleta de colores institucionales en Tailwind CSS v4 y la estructura del componente de autenticación:
+2. **Pruebas Unitarias de Frontend (Vitest en `erp-gelawitto-ui`):**
+   Verifica tokens institucionales de Tailwind CSS v4, composables reactivos (`useAuth`, `useFormulario`) y manejo de formularios:
    ```bash
+   cd erp-gelawitto-ui
    npm test
    ```
 
@@ -508,45 +513,47 @@ El repositorio está organizado en dos aplicaciones desacopladas (`erp-gelawitto
 
 ```text
 erp-gelawitto/
-├── erp-gelawitto-api/            # Backend API & Motor Transaccional (Laravel + PostgreSQL)
+├── erp-gelawitto-api/            # Backend REST API & Motor Transaccional (Laravel 11 + PostgreSQL 16)
 │   ├── app/
 │   │   ├── Http/
-│   │   │   ├── Controllers/      # Controladores por dominio (Auth, Catalogos, Compras, etc.)
-│   │   │   ├── Middleware/       # HandleInertiaRequests y control de acceso por roles
+│   │   │   ├── Controllers/      # Controladores REST que devuelven JsonResponse pura
+│   │   │   ├── Middleware/       # Control de acceso por roles desde PostgreSQL
 │   │   │   ├── Requests/         # FormRequests con validaciones de negocio
 │   │   │   └── Resources/        # Transformadores JSON estandarizados
-│   │   ├── Models/               # Modelos Eloquent con relaciones y casts decimales
-│   │   ├── Repositories/         # Acceso a datos y bloqueos pesimistas (lockForUpdate)
-│   │   └── Services/             # Lógica de negocio y partida doble (DB::transaction)
-│   ├── config/                   # Configuración de Laravel, base de datos y CORS
+│   │   ├── Models/               # Modelos Eloquent con relaciones y casts
+│   │   ├── Repositories/         # Acceso a datos, bloqueos pesimistas y secuencias atomicas
+│   │   └── Services/             # Logica de negocio y partida doble (DB::transaction)
+│   ├── config/                   # Configuracion de base de datos, CORS y servicios
 │   ├── database/
-│   │   ├── migrations/           # Esquema DDL de las 19 tablas relacionales
-│   │   └── seeders/              # Datos iniciales y catálogo de cuentas (DatabaseSeeder.php)
+│   │   ├── gelawitto_erp.sql     # Respaldo oficial exportado con pg_dump para restauracion
+│   │   ├── migrations/           # Esquema DDL con tablas, secuencias y parametros
+│   │   └── seeders/              # Semillero inicial de datos y cuentas contables
 │   ├── routes/
-│   │   └── web.php               # Endpoints y rutas autenticadas por rol
+│   │   ├── api.php               # Endpoints REST de la API
+│   │   └── web.php               # Rutas base y documentacion
 │   ├── tests/
-│   │   └── Feature/              # Suite de 43 pruebas de integración en PHPUnit
-│   ├── .env.example              # Plantilla de configuración de entorno
-│   └── docker-compose.yml        # Orquestación de PostgreSQL 16
+│   │   └── Feature/              # Suite de 45 pruebas transaccionales en PHPUnit
+│   ├── .env.example              # Plantilla de configuracion de entorno
+│   └── docker-compose.yml        # Orquestacion de PostgreSQL 16
 │
 ├── erp-gelawitto-ui/             # Frontend SPA Desacoplado (Vue 3 + Vite + Tailwind CSS v4)
 │   ├── src/
 │   │   ├── Layouts/
-│   │   │   └── ErpLayout.vue     # Layout corporativo con barra lateral y modo oscuro
+│   │   │   └── ErpLayout.vue     # Layout corporativo con navegacion dinamica desde PostgreSQL
 │   │   ├── Pages/
 │   │   │   ├── Auth/Login.vue    # Portal de acceso Split-Screen
-│   │   │   └── Erp/              # Vistas de módulos (Dashboard, Catalogos, Compras, etc.)
-│   │   ├── navigation/vertical/  # Menú lateral modular dividido por dominios
-│   │   ├── plugins/axios.ts      # Instancia centralizada de Axios (@axios) e interceptores
-│   │   ├── router/index.ts       # Enrutador Vue Router con carga dinámica
+│   │   │   └── Erp/              # Vistas de modulos conectadas a los endpoints REST
+│   │   ├── composables/          # useAuth (roles/modulos) y useFormulario (formularios reactivos)
+│   │   ├── plugins/axios.ts      # Instancia centralizada de Axios (@axios)
+│   │   ├── router/index.ts       # Vue Router 4 con guardias de permisos desde base de datos
 │   │   └── services/
-│   │       ├── api.ts            # Cliente de sincronización con el Backend
-│   │       └── apiService.ts     # Factoría de servicios REST por recurso
-│   ├── .env.development          # Configuración de entorno local
-│   ├── .env.production           # Configuración de entorno productivo
-│   └── vite.config.ts            # Configuración de Vite 8 y alias de módulos
+│   │       └── apiService.ts     # Factoria de llamadas REST
+│   ├── tests/                    # Pruebas unitarias en Vitest (tokens de diseno y composables)
+│   ├── .env.development          # Configuracion de entorno local
+│   ├── .env.example              # Plantilla de variables de entorno
+│   └── vite.config.ts            # Configuracion de Vite 8 y proxy de desarrollo
 │
-└── docs/                         # Documentación Técnica y Manual de Usuario (.docx)
+└── docs/                         # Documentacion Tecnica y Manual de Usuario
     ├── Manual_de_Usuario_ERP_Gelawitto.docx
     ├── entregable/
     └── images/

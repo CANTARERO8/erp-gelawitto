@@ -17,16 +17,14 @@ export default defineConfig(({ mode }) => {
             alias: {
                 '@': path.resolve(rootDir, 'src'),
                 '@axios': path.resolve(rootDir, 'src/plugins/axios.ts'),
-                '@inertiajs/vue3': path.resolve(rootDir, 'src/adapters/inertia-spa.ts'),
             },
         },
         server: {
             port: 5174,
             proxy: {
-                '/erp-api': {
+                '/api': {
                     target: apiTarget,
                     changeOrigin: true,
-                    rewrite: (p) => p.replace(/^\/erp-api/, ''),
                 },
             },
         },

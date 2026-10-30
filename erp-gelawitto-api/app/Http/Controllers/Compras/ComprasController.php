@@ -9,20 +9,20 @@ use App\Http\Resources\Compras\OrdenCompraResource;
 use App\Models\Compras\OrdenCompra;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Compras\ComprasRepository;
+use App\Repositories\Configuracion\ParametrosRepository;
 use App\Services\Compras\ComprasService;
-use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class ComprasController extends Controller
 {
     public function __construct(
         protected ComprasRepository $comprasRepository,
         protected CatalogosRepository $catalogosRepository,
-        protected ComprasService $comprasService
+        protected ComprasService $comprasService,
+        protected ParametrosRepository $parametrosRepository
     ) {}
 
-    public function index(): Response
+    public function index(): JsonResponse
     {
         $ordenes = OrdenCompraResource::collection($this->comprasRepository->getOrdenes())->resolve();
 
@@ -31,7 +31,7 @@ class ComprasController extends Controller
                 'id' => $p->id,
                 'nombre' => $p->nombre,
             ];
-        });
+        })->values();
 
         $insumos = $this->catalogosRepository->getInsumosActivos()->map(function ($i) {
             return [
@@ -41,35 +41,42 @@ class ComprasController extends Controller
                 'costo_promedio' => (string) $i->costo_promedio,
                 'unidad' => $i->unidad?->abreviatura ?? '',
             ];
-        });
+        })->values();
 
-        return Inertia::render('Erp/Compras', [
+        return response()->json([
             'ordenes' => $ordenes,
             'proveedores' => $proveedores,
             'insumos' => $insumos,
+            'iva_porcentaje' => $this->parametrosRepository->valorDecimal('iva_porcentaje', 15.0),
         ]);
     }
 
-    public function store(StoreCompraRequest $request): RedirectResponse
+    public function store(StoreCompraRequest $request): JsonResponse
     {
-        $this->comprasService->registrarOrden(
+        $orden = $this->comprasService->registrarOrden(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Orden de compra creada. Queda pendiente hasta su recepción en almacén.');
+        return response()->json([
+            'message' => 'Orden de compra creada. Queda pendiente hasta su recepción en almacén.',
+            'orden' => (new OrdenCompraResource($orden))->resolve(),
+        ], 201);
     }
 
-    public function recibir(RecibirCompraRequest $request, OrdenCompra $orden): RedirectResponse
+    public function recibir(RecibirCompraRequest $request, OrdenCompra $orden): JsonResponse
     {
-        $this->comprasService->recibirOrden(
+        $ordenActualizada = $this->comprasService->recibirOrden(
             $orden,
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Orden recibida en almacén: stock, Kardex y finanzas actualizados.');
+        return response()->json([
+            'message' => 'Orden recibida en almacén: stock, Kardex y finanzas actualizados.',
+            'orden' => (new OrdenCompraResource($ordenActualizada))->resolve(),
+        ]);
     }
 }

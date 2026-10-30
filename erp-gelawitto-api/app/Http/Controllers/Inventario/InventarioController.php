@@ -10,9 +10,7 @@ use App\Http\Resources\Inventario\KardexResource;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Inventario\InventarioRepository;
 use App\Services\Inventario\InventarioService;
-use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class InventarioController extends Controller
 {
@@ -22,23 +20,26 @@ class InventarioController extends Controller
         protected InventarioService $inventarioService
     ) {}
 
-    public function index(): Response
+    public function index(): JsonResponse
     {
-        return Inertia::render('Erp/Inventario', [
+        return response()->json([
             'insumos' => InsumoResource::collection($this->catalogosRepository->getInsumos())->resolve(),
             'productos' => ProductoResource::collection($this->catalogosRepository->getProductos())->resolve(),
             'kardex' => KardexResource::collection($this->inventarioRepository->getKardex(40))->resolve(),
         ]);
     }
 
-    public function storeAjuste(StoreAjusteRequest $request): RedirectResponse
+    public function storeAjuste(StoreAjusteRequest $request): JsonResponse
     {
-        $this->inventarioService->registrarAjuste(
+        $movimiento = $this->inventarioService->registrarAjuste(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Movimiento asentado en el Kardex inmutable.');
+        return response()->json([
+            'message' => 'Movimiento asentado en el Kardex inmutable.',
+            'movimiento' => (new KardexResource($movimiento))->resolve(),
+        ], 201);
     }
 }

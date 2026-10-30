@@ -5,35 +5,64 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
+use App\Repositories\Configuracion\ParametrosRepository;
 use App\Services\Seguridad\SeguridadService;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class AuthController extends Controller
 {
     public function __construct(
-        protected SeguridadService $seguridadService
+        protected SeguridadService $seguridadService,
+        protected ParametrosRepository $parametrosRepository
     ) {}
 
-    public function showLogin(Request $request): Response
+    public function showLogin(Request $request): JsonResponse
     {
         $throttleKey = $this->throttleKey($request);
         $attempts = RateLimiter::attempts($throttleKey);
         $lockoutSeconds = RateLimiter::availableIn($throttleKey);
 
-        return Inertia::render('Auth/Login', [
+        return response()->json([
             'failedAttempts' => $attempts,
             'lockoutSeconds' => $attempts >= 5 && $lockoutSeconds > 0 ? $lockoutSeconds : 0,
         ]);
     }
 
-    public function login(LoginRequest $request): RedirectResponse
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'rol' => $user->rol,
+                'rol_id' => $user->rol_id,
+            ],
+            'modulos' => $user->modulosPermitidos()->values(),
+            'parametros' => $this->parametrosRepository->obtenerTodos(),
+        ]);
+    }
+
+    public function parametros(): JsonResponse
+    {
+        return response()->json([
+            'parametros' => $this->parametrosRepository->obtenerTodos(),
+            'iva_porcentaje' => $this->parametrosRepository->valorDecimal('iva_porcentaje', 15.0),
+            'tasa_iva' => $this->parametrosRepository->tasaIva(),
+        ]);
+    }
+
+    public function login(LoginRequest $request): JsonResponse
     {
         $credentials = $request->validated();
         $throttleKey = $this->throttleKey($request);
@@ -77,7 +106,9 @@ class AuthController extends Controller
         }
 
         RateLimiter::clear($throttleKey);
-        $request->session()->regenerate();
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+        }
 
         $authenticatedUser = $request->user();
         $authenticatedUser->update(['ultimo_acceso' => now()]);
@@ -90,11 +121,21 @@ class AuthController extends Controller
             $request->ip()
         );
 
-        return redirect()->intended(route('dashboard'))
-            ->with('success', "Bienvenido al sistema, {$authenticatedUser->name}.");
+        return response()->json([
+            'message' => "Bienvenido al sistema, {$authenticatedUser->name}.",
+            'user' => [
+                'id' => $authenticatedUser->id,
+                'name' => $authenticatedUser->name,
+                'email' => $authenticatedUser->email,
+                'rol' => $authenticatedUser->rol,
+                'rol_id' => $authenticatedUser->rol_id,
+            ],
+            'modulos' => $authenticatedUser->modulosPermitidos()->values(),
+            'parametros' => $this->parametrosRepository->obtenerTodos(),
+        ]);
     }
 
-    public function logout(Request $request): RedirectResponse
+    public function logout(Request $request): JsonResponse
     {
         if ($request->user()) {
             $this->seguridadService->registrarAuditoria(
@@ -107,10 +148,14 @@ class AuthController extends Controller
         }
 
         Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
-        return redirect()->route('login');
+        return response()->json([
+            'message' => 'Sesión cerrada correctamente.',
+        ]);
     }
 
     private function throttleKey(Request $request): string

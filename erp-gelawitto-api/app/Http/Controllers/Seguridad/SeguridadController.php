@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Seguridad\StoreUsuarioRequest;
 use App\Http\Resources\Seguridad\BitacoraResource;
 use App\Http\Resources\Seguridad\UserResource;
+use App\Models\Seguridad\Rol;
 use App\Repositories\Seguridad\SeguridadRepository;
 use App\Services\Seguridad\SeguridadService;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Support\Facades\Schema;
 
 class SeguridadController extends Controller
 {
@@ -20,26 +20,34 @@ class SeguridadController extends Controller
         protected SeguridadService $seguridadService
     ) {}
 
-    public function index(): Response
+    public function index(): JsonResponse
     {
-        return Inertia::render('Erp/Seguridad', [
+        $roles = Schema::hasTable('roles')
+            ? Rol::orderBy('id')->get(['id', 'nombre', 'descripcion'])->values()
+            : collect();
+
+        return response()->json([
             'usuarios' => UserResource::collection($this->seguridadRepository->getUsuarios())->resolve(),
             'bitacora' => BitacoraResource::collection($this->seguridadRepository->getBitacora(40))->resolve(),
+            'roles' => $roles,
         ]);
     }
 
-    public function store(StoreUsuarioRequest $request): RedirectResponse
+    public function store(StoreUsuarioRequest $request): JsonResponse
     {
-        $this->seguridadService->crearUsuario(
+        $usuario = $this->seguridadService->crearUsuario(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Colaborador registrado con acceso al ERP.');
+        return response()->json([
+            'message' => 'Colaborador registrado con acceso al ERP.',
+            'usuario' => (new UserResource($usuario))->resolve(),
+        ], 201);
     }
 
-    public function toggle(Request $request, int $id): RedirectResponse
+    public function toggle(Request $request, int $id): JsonResponse
     {
         $usuario = $this->seguridadService->toggleUsuario(
             $id,
@@ -47,6 +55,9 @@ class SeguridadController extends Controller
             $request->ip()
         );
 
-        return back()->with('success', "Estado del usuario {$usuario->name} actualizado.");
+        return response()->json([
+            'message' => "Estado del usuario {$usuario->name} actualizado.",
+            'usuario' => (new UserResource($usuario))->resolve(),
+        ]);
     }
 }

@@ -14,9 +14,7 @@ use App\Http\Resources\Catalogos\ProveedorResource;
 use App\Http\Resources\Catalogos\UnidadMedidaResource;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Services\Catalogos\CatalogosService;
-use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class CatalogosController extends Controller
 {
@@ -25,9 +23,9 @@ class CatalogosController extends Controller
         protected CatalogosService $catalogosService
     ) {}
 
-    public function index(): Response
+    public function index(): JsonResponse
     {
-        return Inertia::render('Erp/Catalogos', [
+        return response()->json([
             'productos' => ProductoResource::collection($this->catalogosRepository->getProductos())->resolve(),
             'insumos' => InsumoResource::collection($this->catalogosRepository->getInsumos())->resolve(),
             'proveedores' => ProveedorResource::collection($this->catalogosRepository->getProveedores())->resolve(),
@@ -36,47 +34,59 @@ class CatalogosController extends Controller
         ]);
     }
 
-    public function storeProducto(StoreProductoRequest $request): RedirectResponse
+    public function storeProducto(StoreProductoRequest $request): JsonResponse
     {
-        $this->catalogosService->crearProducto(
+        $producto = $this->catalogosService->crearProducto(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Producto registrado correctamente en el catálogo.');
+        return response()->json([
+            'message' => 'Producto registrado correctamente en el catálogo.',
+            'producto' => (new ProductoResource($producto))->resolve(),
+        ], 201);
     }
 
-    public function storeInsumo(StoreInsumoRequest $request): RedirectResponse
+    public function storeInsumo(StoreInsumoRequest $request): JsonResponse
     {
-        $this->catalogosService->crearInsumo(
+        $insumo = $this->catalogosService->crearInsumo(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Insumo registrado correctamente en el catálogo.');
+        return response()->json([
+            'message' => 'Insumo registrado correctamente en el catálogo.',
+            'insumo' => (new InsumoResource($insumo))->resolve(),
+        ], 201);
     }
 
-    public function storeProveedor(StoreProveedorRequest $request): RedirectResponse
+    public function storeProveedor(StoreProveedorRequest $request): JsonResponse
     {
-        $this->catalogosService->crearProveedor(
+        $proveedor = $this->catalogosService->crearProveedor(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Proveedor registrado correctamente en el catálogo.');
+        return response()->json([
+            'message' => 'Proveedor registrado correctamente en el catálogo.',
+            'proveedor' => (new ProveedorResource($proveedor))->resolve(),
+        ], 201);
     }
 
-    public function storeCliente(StoreClienteRequest $request): RedirectResponse
+    public function storeCliente(StoreClienteRequest $request): JsonResponse
     {
-        $this->catalogosService->crearCliente(
+        $cliente = $this->catalogosService->crearCliente(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Cliente registrado correctamente en el catálogo.');
+        return response()->json([
+            'message' => 'Cliente registrado correctamente en el catálogo.',
+            'cliente' => (new ClienteResource($cliente))->resolve(),
+        ], 201);
     }
 }

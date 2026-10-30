@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { Link, router, usePage } from '@inertiajs/vue3';
+import { computed, onMounted, ref, watch, type Component } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+import apiService from '@/services/apiService';
+import { useAuth } from '@/composables/useAuth';
 import {
     LayoutDashboard,
     Package,
@@ -24,9 +26,9 @@ defineProps<{
     subtitle?: string;
 }>();
 
-const page = usePage();
-const user = computed(() => (page.props.auth as { user: { id: number; name: string; email: string; rol: string } | null })?.user);
-const flash = computed(() => page.props.flash as { success?: string | null; error?: string | null });
+const route = useRoute();
+const vueRouter = useRouter();
+const { usuario: user, modulos, mensajeExito, mensajeError, limpiarSesion } = useAuth();
 
 const isCollapsed = ref(false);
 const isDark = ref(false);
@@ -34,33 +36,26 @@ const toastVisible = ref(false);
 const toastMessage = ref('');
 const toastVariant = ref<'success' | 'error'>('success');
 
-interface NavItem {
-    name: string;
-    href: string;
-    routeMatch: string;
-    icon: any;
-    roles?: string[];
-}
+const iconoPorClave: Record<string, Component> = {
+    dashboard: LayoutDashboard,
+    catalogos: Package,
+    compras: ShoppingBag,
+    inventario: Boxes,
+    produccion: FlaskConical,
+    calidad: ClipboardCheck,
+    ventas: Receipt,
+    finanzas: Landmark,
+    seguridad: ShieldCheck,
+};
 
-const allNavItems: NavItem[] = [
-    { name: 'Tablero Principal', href: '/dashboard', routeMatch: '/dashboard', icon: LayoutDashboard },
-    { name: 'Catálogos Maestros', href: '/catalogos', routeMatch: '/catalogos', icon: Package, roles: ['Administrador', 'Producción', 'Contador'] },
-    { name: 'Compras a Proveedores', href: '/compras', routeMatch: '/compras', icon: ShoppingBag, roles: ['Administrador', 'Contador'] },
-    { name: 'Inventario y Kardex', href: '/inventario', routeMatch: '/inventario', icon: Boxes, roles: ['Administrador', 'Producción', 'Contador', 'Cajero'] },
-    { name: 'Recetas y Producción', href: '/produccion', routeMatch: '/produccion', icon: FlaskConical, roles: ['Administrador', 'Producción'] },
-    { name: 'Calidad y Trazabilidad', href: '/calidad', routeMatch: '/calidad', icon: ClipboardCheck, roles: ['Administrador', 'Producción'] },
-    { name: 'Ventas y Turno de Caja', href: '/ventas', routeMatch: '/ventas', icon: Receipt, roles: ['Administrador', 'Cajero'] },
-    { name: 'Finanzas y Cuentas', href: '/finanzas', routeMatch: '/finanzas', icon: Landmark, roles: ['Administrador', 'Contador'] },
-    { name: 'Usuarios y Auditoría', href: '/seguridad', routeMatch: '/seguridad', icon: ShieldCheck, roles: ['Administrador'] },
-];
-
-const navItems = computed(() => {
-    const rol = user.value?.rol;
-    if (!rol || rol === 'Administrador') {
-        return allNavItems;
-    }
-    return allNavItems.filter((item) => !item.roles || item.roles.includes(rol));
-});
+const navItems = computed(() =>
+    modulos.value.map((mod) => ({
+        name: mod.nombre,
+        href: mod.ruta,
+        routeMatch: mod.ruta,
+        icon: iconoPorClave[mod.clave] ?? LayoutDashboard,
+    }))
+);
 
 onMounted(() => {
     isDark.value = document.documentElement.classList.contains('dark');
@@ -71,22 +66,18 @@ onMounted(() => {
 });
 
 watch(
-    () => [flash.value?.success, flash.value?.error],
+    () => [mensajeExito.value, mensajeError.value],
     ([successMsg, errorMsg]) => {
         if (successMsg) {
             toastVariant.value = 'success';
             toastMessage.value = successMsg;
             toastVisible.value = true;
-            setTimeout(() => {
-                toastVisible.value = false;
-            }, 4000);
         } else if (errorMsg) {
             toastVariant.value = 'error';
             toastMessage.value = errorMsg;
             toastVisible.value = true;
-            setTimeout(() => {
-                toastVisible.value = false;
-            }, 4500);
+        } else {
+            toastVisible.value = false;
         }
     },
     { immediate: true }
@@ -104,11 +95,16 @@ function toggleSidebar() {
 }
 
 function isActive(match: string): boolean {
-    return page.url.startsWith(match);
+    return route.path.startsWith(match);
 }
 
-function logout() {
-    router.post('/logout');
+async function logout() {
+    try {
+        await apiService('').post('logout', {});
+    } finally {
+        limpiarSesion();
+        await vueRouter.push('/login');
+    }
 }
 </script>
 
@@ -122,7 +118,7 @@ function logout() {
             ]"
         >
             <div class="h-18 flex items-center justify-between px-4 border-b border-white/10">
-                <Link href="/dashboard" class="flex items-center gap-3 overflow-hidden">
+                <RouterLink to="/dashboard" class="flex items-center gap-3 overflow-hidden">
                     <img
                         :src="isCollapsed ? '/images/gelawitto2.svg' : '/images/gelawitto.svg'"
                         alt="Gelawitto"
@@ -131,14 +127,14 @@ function logout() {
                             isCollapsed ? 'w-10 h-10' : 'h-10 w-auto max-w-[175px]'
                         ]"
                     />
-                </Link>
+                </RouterLink>
             </div>
 
             <nav class="flex-1 px-3 py-5 space-y-1.5 overflow-y-auto" aria-label="Navegación principal del ERP">
-                <Link
+                <RouterLink
                     v-for="item in navItems"
                     :key="item.href"
-                    :href="item.href"
+                    :to="item.href"
                     :class="[
                         'flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors',
                         isActive(item.routeMatch)
@@ -148,7 +144,7 @@ function logout() {
                 >
                     <component :is="item.icon" class="w-5 h-5 shrink-0" />
                     <span v-if="!isCollapsed" class="truncate">{{ item.name }}</span>
-                </Link>
+                </RouterLink>
             </nav>
 
             <div class="p-3 border-t border-white/10">

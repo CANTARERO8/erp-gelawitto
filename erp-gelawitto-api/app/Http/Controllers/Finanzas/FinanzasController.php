@@ -8,10 +8,8 @@ use App\Http\Resources\Finanzas\FinanzasMovimientoResource;
 use App\Repositories\Finanzas\FinanzasRepository;
 use App\Services\Finanzas\ContabilidadService;
 use App\Services\Finanzas\FinanzasService;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class FinanzasController extends Controller
 {
@@ -21,14 +19,14 @@ class FinanzasController extends Controller
         protected ContabilidadService $contabilidadService
     ) {}
 
-    public function index(): Response
+    public function index(): JsonResponse
     {
         $ingresos = $this->finanzasRepository->getIngresosCobradosTotal();
         $egresos = $this->finanzasRepository->getEgresosPagadosTotal();
         $cuentasPorPagar = $this->finanzasRepository->getCuentasPorPagarTotal();
         $cuentasPorCobrar = $this->finanzasRepository->getCuentasPorCobrarTotal();
 
-        return Inertia::render('Erp/Finanzas', [
+        return response()->json([
             'movimientos' => FinanzasMovimientoResource::collection($this->finanzasRepository->getMovimientos())->resolve(),
             'resumen' => [
                 'ingresos' => round($ingresos, 2),
@@ -41,25 +39,31 @@ class FinanzasController extends Controller
         ]);
     }
 
-    public function storeGasto(StoreGastoRequest $request): RedirectResponse
+    public function storeGasto(StoreGastoRequest $request): JsonResponse
     {
-        $this->finanzasService->registrarGasto(
+        $movimiento = $this->finanzasService->registrarGasto(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Movimiento financiero registrado correctamente.');
+        return response()->json([
+            'message' => 'Movimiento financiero registrado correctamente.',
+            'movimiento' => (new FinanzasMovimientoResource($movimiento->load('usuario')))->resolve(),
+        ], 201);
     }
 
-    public function liquidar(Request $request, int $id): RedirectResponse
+    public function liquidar(Request $request, int $id): JsonResponse
     {
-        $this->finanzasService->liquidarCuenta(
+        $movimiento = $this->finanzasService->liquidarCuenta(
             $id,
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Cuenta liquidada y asentada en Libro Diario.');
+        return response()->json([
+            'message' => 'Cuenta liquidada y asentada en Libro Diario.',
+            'movimiento' => (new FinanzasMovimientoResource($movimiento->load('usuario')))->resolve(),
+        ]);
     }
 }

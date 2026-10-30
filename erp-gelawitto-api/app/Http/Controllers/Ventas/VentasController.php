@@ -8,21 +8,21 @@ use App\Http\Requests\Ventas\StoreVentaRequest;
 use App\Http\Resources\Ventas\CajaTurnoResource;
 use App\Http\Resources\Ventas\VentaResource;
 use App\Repositories\Catalogos\CatalogosRepository;
+use App\Repositories\Configuracion\ParametrosRepository;
 use App\Repositories\Ventas\VentasRepository;
 use App\Services\Ventas\VentasService;
-use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class VentasController extends Controller
 {
     public function __construct(
         protected VentasRepository $ventasRepository,
         protected CatalogosRepository $catalogosRepository,
-        protected VentasService $ventasService
+        protected VentasService $ventasService,
+        protected ParametrosRepository $parametrosRepository
     ) {}
 
-    public function index(): Response
+    public function index(): JsonResponse
     {
         $turnoActivo = $this->ventasRepository->getTurnoActivo();
 
@@ -40,7 +40,7 @@ class VentasController extends Controller
                 'stock_en_cuarentena' => (string) $enCuarentena,
                 'stock_disponible' => (string) $disponible,
             ];
-        });
+        })->values();
 
         $clientes = $this->catalogosRepository->getClientesActivos()->map(function ($c) {
             return [
@@ -48,46 +48,56 @@ class VentasController extends Controller
                 'nombre' => $c->nombre,
                 'tipo' => $c->tipo,
             ];
-        });
+        })->values();
 
-        return Inertia::render('Erp/Ventas', [
+        return response()->json([
             'turnoActivo' => $turnoActivo ? (new CajaTurnoResource($turnoActivo))->resolve() : null,
             'ventas' => VentaResource::collection($this->ventasRepository->getVentasRecientes(25))->resolve(),
             'productos' => $productos,
             'clientes' => $clientes,
             'historialTurnos' => CajaTurnoResource::collection($this->ventasRepository->getHistorialTurnos(10))->resolve(),
+            'iva_porcentaje' => $this->parametrosRepository->valorDecimal('iva_porcentaje', 15.0),
         ]);
     }
 
-    public function store(StoreVentaRequest $request): RedirectResponse
+    public function store(StoreVentaRequest $request): JsonResponse
     {
-        $this->ventasService->registrarVenta(
+        $venta = $this->ventasService->registrarVenta(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Venta registrada, stock descontado y caja actualizada.');
+        return response()->json([
+            'message' => 'Venta registrada, stock descontado y caja actualizada.',
+            'venta' => (new VentaResource($venta))->resolve(),
+        ], 201);
     }
 
-    public function gestionarCaja(GestionarCajaRequest $request): RedirectResponse
+    public function gestionarCaja(GestionarCajaRequest $request): JsonResponse
     {
         if ($request->input('accion') === 'abrir') {
-            $this->ventasService->abrirTurno(
+            $turno = $this->ventasService->abrirTurno(
                 $request->validated(),
                 $request->user()->id,
                 $request->ip()
             );
 
-            return back()->with('success', 'Turno de caja abierto correctamente.');
+            return response()->json([
+                'message' => 'Turno de caja abierto correctamente.',
+                'turno' => (new CajaTurnoResource($turno->load('cajero')))->resolve(),
+            ]);
         }
 
-        $this->ventasService->cerrarTurno(
+        $turnoCerrado = $this->ventasService->cerrarTurno(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Corte de caja ejecutado y registrado en auditoría.');
+        return response()->json([
+            'message' => 'Corte de caja ejecutado y registrado en auditoría.',
+            'turno' => (new CajaTurnoResource($turnoCerrado->load('cajero')))->resolve(),
+        ]);
     }
 }

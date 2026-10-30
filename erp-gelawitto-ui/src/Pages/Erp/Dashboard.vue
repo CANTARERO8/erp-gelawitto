@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { RouterLink } from 'vue-router';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
 defineProps<{
@@ -49,8 +49,6 @@ function money(val: number | string): string {
 </script>
 
 <template>
-    <Head title="Tablero Principal" />
-
     <ErpLayout
         title="Tablero Ejecutivo"
         subtitle=" Estado operativo en tiempo real de producción, inventario, ventas y flujo financiero"
@@ -99,24 +97,24 @@ function money(val: number | string): string {
                 <p class="text-xs text-muted-foreground">Ejecuta transacciones integradas con afectación inmediata en Kardex y Caja</p>
             </div>
             <div class="flex flex-wrap gap-2.5">
-                <Link
-                    href="/compras"
+                <RouterLink
+                    to="/compras"
                     class="px-3.5 py-2 rounded-lg border border-border bg-background hover:bg-muted text-xs font-semibold text-foreground transition-colors"
                 >
                     Recibir Compra
-                </Link>
-                <Link
-                    href="/produccion"
+                </RouterLink>
+                <RouterLink
+                    to="/produccion"
                     class="px-3.5 py-2 rounded-lg border border-border bg-background hover:bg-muted text-xs font-semibold text-foreground transition-colors"
                 >
                     Producir Lote de Gelato
-                </Link>
-                <Link
-                    href="/ventas"
+                </RouterLink>
+                <RouterLink
+                    to="/ventas"
                     class="px-4 py-2 rounded-lg bg-fresa hover:bg-frambuesa text-xs font-semibold text-white transition-colors"
                 >
                     Abrir Punto de Venta
-                </Link>
+                </RouterLink>
             </div>
         </section>
 
@@ -128,9 +126,9 @@ function money(val: number | string): string {
                         <h2 class="text-base font-titulo font-semibold text-foreground">Existencias y Margen por Sabor</h2>
                         <p class="text-xs text-muted-foreground">Costo unitario calculado por lotes de producción</p>
                     </div>
-                    <Link href="/catalogos" class="text-xs font-semibold text-frambuesa hover:underline">
+                    <RouterLink to="/catalogos" class="text-xs font-semibold text-frambuesa hover:underline">
                         Ver catálogo completo
-                    </Link>
+                    </RouterLink>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -173,9 +171,9 @@ function money(val: number | string): string {
                         <h2 class="text-base font-titulo font-semibold text-foreground">Alertas de Reabastecimiento</h2>
                         <p class="text-xs text-muted-foreground">Insumos con stock igual o inferior al mínimo operativo</p>
                     </div>
-                    <Link href="/compras" class="text-xs font-semibold text-frambuesa hover:underline">
+                    <RouterLink to="/compras" class="text-xs font-semibold text-frambuesa hover:underline">
                         Generar orden
-                    </Link>
+                    </RouterLink>
                 </div>
 
                 <div class="p-5 flex-1 flex flex-col justify-center">
@@ -210,9 +208,9 @@ function money(val: number | string): string {
                     <h2 class="text-base font-titulo font-semibold text-foreground">Bitácora Reciente de Kardex</h2>
                     <p class="text-xs text-muted-foreground">Trazabilidad inmutable de entradas, consumos de receta y salidas por venta</p>
                 </div>
-                <Link href="/inventario" class="text-xs font-semibold text-frambuesa hover:underline">
+                <RouterLink to="/inventario" class="text-xs font-semibold text-frambuesa hover:underline">
                     Abrir Kardex completo
-                </Link>
+                </RouterLink>
             </div>
 
             <div class="overflow-x-auto">

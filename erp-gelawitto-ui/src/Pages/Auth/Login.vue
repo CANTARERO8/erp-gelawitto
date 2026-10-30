@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { useRouter } from 'vue-router';
 import { Eye, EyeOff, Sun, Moon } from 'lucide-vue-next';
+import { useFormulario } from '@/composables/useFormulario';
+import { establecerSesion } from '@/composables/useAuth';
 
 const props = defineProps<{
     failedAttempts?: number;
     lockoutSeconds?: number;
 }>();
 
-const form = useForm({
+const router = useRouter();
+
+const form = useFormulario({
     email: '',
     password: '',
     remember: false,
@@ -32,8 +36,6 @@ const buttonLabel = computed(() => {
     }
     return 'Inicia sesión';
 });
-
-
 
 onMounted(() => {
     isDark.value = document.documentElement.classList.contains('dark');
@@ -68,11 +70,16 @@ function toggleTheme() {
     localStorage.setItem('gelawitto-theme', isDark.value ? 'dark' : 'light');
 }
 
-
 function submitLogin() {
     if (isLockedOut.value) return;
 
     form.post('/login', {
+        onSuccess: async (respuesta) => {
+            if (respuesta?.user) {
+                establecerSesion(respuesta);
+            }
+            await router.push('/dashboard');
+        },
         onError: (errors) => {
             if (errors.attempts) {
                 attemptsCount.value = Number(errors.attempts);
@@ -92,8 +99,6 @@ function submitLogin() {
 </script>
 
 <template>
-    <Head title="Iniciar sesión" />
-
     <div class="min-h-screen w-full grid grid-cols-12 bg-background text-foreground">
         <!-- Columna izquierda heroica (8 columnas en escritorio, inspirada en el Login v2 de Carnes San Martín) -->
         <div class="hidden lg:flex lg:col-span-8 items-center justify-center p-8 bg-surface-elevated relative overflow-hidden">

@@ -14,9 +14,7 @@ use App\Models\Produccion\LoteProduccion;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Produccion\ProduccionRepository;
 use App\Services\Produccion\ProduccionService;
-use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class ProduccionController extends Controller
 {
@@ -26,9 +24,9 @@ class ProduccionController extends Controller
         protected CatalogosRepository $catalogosRepository
     ) {}
 
-    public function index(): Response
+    public function index(): JsonResponse
     {
-        return Inertia::render('Erp/Produccion', [
+        return response()->json([
             'recetas' => RecetaResource::collection($this->produccionRepository->getRecetasConIngredientes())->resolve(),
             'lotes' => LoteResource::collection($this->produccionRepository->getLotes())->resolve(),
             'productos' => ProductoResource::collection($this->catalogosRepository->getProductosActivos())->resolve(),
@@ -36,37 +34,46 @@ class ProduccionController extends Controller
         ]);
     }
 
-    public function storeReceta(StoreRecetaRequest $request): RedirectResponse
+    public function storeReceta(StoreRecetaRequest $request): JsonResponse
     {
-        $this->produccionService->crearReceta(
+        $receta = $this->produccionService->crearReceta(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Fórmula técnica registrada correctamente.');
+        return response()->json([
+            'message' => 'Fórmula técnica registrada correctamente.',
+            'receta' => (new RecetaResource($receta))->resolve(),
+        ], 201);
     }
 
-    public function store(StoreLoteRequest $request): RedirectResponse
+    public function store(StoreLoteRequest $request): JsonResponse
     {
-        $this->produccionService->programarLote(
+        $lote = $this->produccionService->programarLote(
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Orden de producción programada. Los insumos se descontarán al ejecutarla.');
+        return response()->json([
+            'message' => 'Orden de producción programada. Los insumos se descontarán al ejecutarla.',
+            'lote' => (new LoteResource($lote->load(['producto', 'operador'])))->resolve(),
+        ], 201);
     }
 
-    public function ejecutar(EjecutarLoteRequest $request, LoteProduccion $lote): RedirectResponse
+    public function ejecutar(EjecutarLoteRequest $request, LoteProduccion $lote): JsonResponse
     {
-        $this->produccionService->ejecutarLote(
+        $loteEjecutado = $this->produccionService->ejecutarLote(
             $lote,
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Lote ejecutado: insumos descontados y producto terminado ingresado al Kardex.');
+        return response()->json([
+            'message' => 'Lote ejecutado: insumos descontados y producto terminado ingresado al Kardex.',
+            'lote' => (new LoteResource($loteEjecutado->load(['producto', 'operador'])))->resolve(),
+        ]);
     }
 }

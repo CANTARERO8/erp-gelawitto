@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { useFormulario, ejecutarAccionApi } from '@/composables/useFormulario';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
-defineProps<{
+const props = defineProps<{
     usuarios: Array<{
         id: number;
         name: string;
@@ -21,13 +22,29 @@ defineProps<{
         usuario_rol: string | null;
         created_at: string;
     }>;
+    roles?: Array<{
+        id: number;
+        nombre: string;
+        descripcion?: string;
+    }>;
 }>();
 
-const form = useForm({
+const listaRoles = computed(() =>
+    props.roles && props.roles.length > 0
+        ? props.roles
+        : [
+              { id: 1, nombre: 'Administrador' },
+              { id: 2, nombre: 'Producción' },
+              { id: 3, nombre: 'Cajero' },
+              { id: 4, nombre: 'Contador' },
+          ]
+);
+
+const form = useFormulario({
     name: '',
     email: '',
     password: 'password123',
-    rol: 'Cajero',
+    rol: props.roles?.[0]?.nombre ?? 'Cajero',
 });
 
 function crearUsuario() {
@@ -37,13 +54,11 @@ function crearUsuario() {
 }
 
 function alternarEstado(id: number) {
-    router.post(`/seguridad/usuarios/${id}/toggle`);
+    ejecutarAccionApi(`/seguridad/usuarios/${id}/toggle`);
 }
 </script>
 
 <template>
-    <Head title="Usuarios y Auditoría" />
-
     <ErpLayout
         title="Seguridad, Roles y Auditoría"
         subtitle="Control de accesos por perfil operativo y bitácora inmutable de acciones del sistema"
@@ -85,10 +100,9 @@ function alternarEstado(id: number) {
                                 v-model="form.rol"
                                 class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
                             >
-                                <option value="Administrador">Administrador</option>
-                                <option value="Producción">Producción</option>
-                                <option value="Cajero">Cajero</option>
-                                <option value="Contador">Contador</option>
+                                <option v-for="r in listaRoles" :key="r.id" :value="r.nombre">
+                                    {{ r.nombre }}
+                                </option>
                             </select>
                         </div>
                         <div>

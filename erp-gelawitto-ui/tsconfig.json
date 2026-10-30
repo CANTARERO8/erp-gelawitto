@@ -12,8 +12,7 @@
         "noEmit": true,
         "paths": {
             "@/*": ["./src/*"],
-            "@axios": ["./src/plugins/axios.ts"],
-            "@inertiajs/vue3": ["./src/adapters/inertia-spa.ts"]
+            "@axios": ["./src/plugins/axios.ts"]
         }
     },
     "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"]

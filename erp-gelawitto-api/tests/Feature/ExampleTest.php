@@ -11,16 +11,17 @@ class ExampleTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function test_unauthenticated_users_are_redirected_to_login(): void
+    public function test_unauthenticated_users_receive_401_unauthorized(): void
     {
         $response = $this->get('/dashboard');
-        $response->assertRedirect('/login');
+        $response->assertStatus(401);
     }
 
-    public function test_login_screen_renders_successfully(): void
+    public function test_login_status_endpoint_returns_json(): void
     {
         $response = $this->get('/login');
-        $response->assertStatus(200);
+        $response->assertStatus(200)
+            ->assertJsonStructure(['failedAttempts', 'lockoutSeconds']);
     }
 
     public function test_active_user_can_authenticate_and_access_erp_modules(): void
@@ -32,7 +33,8 @@ class ExampleTest extends TestCase
             'password' => 'password123',
         ]);
 
-        $loginResponse->assertRedirect('/dashboard');
+        $loginResponse->assertOk()
+            ->assertJsonStructure(['message', 'user', 'modulos', 'parametros']);
         $this->assertAuthenticatedAs($user);
 
         foreach (['/dashboard', '/catalogos', '/compras', '/inventario', '/produccion', '/ventas', '/finanzas', '/seguridad'] as $uri) {
@@ -50,12 +52,12 @@ class ExampleTest extends TestCase
             'receta_id' => $receta->id,
             'cantidad_programada' => 10,
             'notas' => 'Lote de prueba automatizada',
-        ])->assertSessionHasNoErrors();
+        ])->assertCreated();
 
         $lote = DB::table('lotes_produccion')->orderByDesc('id')->firstOrFail();
         $this->actingAs($user)->post("/produccion/lotes/{$lote->id}/ejecutar", [
             'cantidad_obtenida' => 9.5,
-        ])->assertSessionHasNoErrors();
+        ])->assertOk();
 
         $productoDespues = DB::table('productos')->where('id', $receta->producto_id)->first();
         $this->assertEquals(

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { useFormulario, ejecutarAccionApi } from '@/composables/useFormulario';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
 const props = defineProps<{
@@ -52,13 +52,13 @@ const props = defineProps<{
 
 const mostrarNuevaReceta = ref(false);
 
-const form = useForm({
+const form = useFormulario({
     receta_id: props.recetas[0]?.id ?? 1,
     cantidad_programada: '10',
     notas: '',
 });
 
-const formReceta = useForm({
+const formReceta = useFormulario({
     producto_id: props.productos?.[0]?.id ?? 1,
     nombre: '',
     rendimiento_unidades: '10',
@@ -133,22 +133,21 @@ function programarLote() {
     });
 }
 
-function ejecutarLote(lote: { id: number; cantidad_programada: string }) {
-    router.post(
+async function ejecutarLote(lote: { id: number; cantidad_programada: string }) {
+    ejecutandoId.value = lote.id;
+    await ejecutarAccionApi(
         `/produccion/lotes/${lote.id}/ejecutar`,
         { cantidad_obtenida: obtenidoEjecucion[lote.id] ?? lote.cantidad_programada },
         {
-            preserveScroll: true,
-            onStart: () => (ejecutandoId.value = lote.id),
-            onFinish: () => (ejecutandoId.value = null),
+            onFinish: () => {
+                ejecutandoId.value = null;
+            },
         }
     );
 }
 </script>
 
 <template>
-    <Head title="Recetas y Producción" />
-
     <ErpLayout
         title="Formulación, MRP y Producción por Lotes"
         subtitle="Fórmulas técnicas, explosión de requerimientos de materiales (MRP) y ejecución transaccional en Córdobas (C$)"

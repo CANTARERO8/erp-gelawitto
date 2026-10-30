@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { useFormulario } from '@/composables/useFormulario';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
 const props = defineProps<{
@@ -37,7 +37,7 @@ const props = defineProps<{
     }>;
 }>();
 
-const form = useForm({
+const form = useFormulario({
     tipo_item: 'insumo' as 'insumo' | 'producto',
     item_id: props.insumos[0]?.id ?? 1,
     tipo_movimiento: 'Merma',
@@ -64,8 +64,6 @@ function registrarAjuste() {
 </script>
 
 <template>
-    <Head title="Inventario y Kardex" />
-
     <ErpLayout
         title="Inventario y Libro de Kardex"
         subtitle="Control de existencias por almacén, registro de mermas y auditoría de movimientos inmutables"

@@ -12,14 +12,17 @@ use App\Http\Controllers\Seguridad\SeguridadController;
 use App\Http\Controllers\Ventas\VentasController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
+Route::get('/', fn () => response()->json(['service' => 'erp-gelawitto-api', 'status' => 'ok']));
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
 });
 
+Route::get('/parametros', [AuthController::class, 'parametros'])->name('parametros');
+
 Route::middleware('auth')->group(function () {
+    Route::get('/me', [AuthController::class, 'me'])->name('me');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

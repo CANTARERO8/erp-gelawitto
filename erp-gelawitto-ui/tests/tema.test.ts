@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 
-const css = readFileSync("resources/css/app.css", "utf8").toLowerCase();
-const loginVue = readFileSync("resources/js/Pages/Auth/Login.vue", "utf8");
+const css = readFileSync("src/css/app.css", "utf8").toLowerCase();
+const loginVue = readFileSync("src/Pages/Auth/Login.vue", "utf8");
 
 describe("tema y login Gelawitto ERP", () => {
     it.each([

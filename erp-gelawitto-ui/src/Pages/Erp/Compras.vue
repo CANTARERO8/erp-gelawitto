@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { useFormulario, ejecutarAccionApi } from '@/composables/useFormulario';
+import { useAuth } from '@/composables/useAuth';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
 const props = defineProps<{
@@ -22,9 +23,14 @@ const props = defineProps<{
         costo_promedio: string;
         unidad: string;
     }>;
+    iva_porcentaje?: number;
 }>();
 
-const form = useForm({
+const { ivaPorcentaje } = useAuth();
+const porcentajeIva = computed(() => Number(props.iva_porcentaje ?? ivaPorcentaje.value));
+const tasaIva = computed(() => porcentajeIva.value / 100);
+
+const form = useFormulario({
     proveedor_id: props.proveedores[0]?.id ?? 1,
     aplicar_iva: false,
     notas: '',
@@ -64,11 +70,11 @@ function actualizarCostoSugerido(idx: number) {
 }
 
 const subtotalEstimado = computed(() => {
-    return form.lineas.reduce((acc, l) => acc + Number(l.cantidad || 0) * Number(l.costo_unitario || 0), 0);
+    return form.lineas.reduce((acc: number, l: any) => acc + Number(l.cantidad || 0) * Number(l.costo_unitario || 0), 0);
 });
 
 const ivaEstimado = computed(() => {
-    return form.aplicar_iva ? subtotalEstimado.value * 0.15 : 0;
+    return form.aplicar_iva ? subtotalEstimado.value * tasaIva.value : 0;
 });
 
 const totalEstimado = computed(() => {
@@ -91,25 +97,24 @@ function crearOrden() {
     });
 }
 
-function recibirOrden(oc: { id: number }) {
-    router.post(
+async function recibirOrden(oc: { id: number }) {
+    recibiendoId.value = oc.id;
+    await ejecutarAccionApi(
         `/compras/${oc.id}/recibir`,
         { modalidad_pago: modalidadRecepcion[oc.id] ?? 'Pagado' },
         {
-            preserveScroll: true,
-            onStart: () => (recibiendoId.value = oc.id),
-            onFinish: () => (recibiendoId.value = null),
+            onFinish: () => {
+                recibiendoId.value = null;
+            },
         }
     );
 }
 </script>
 
 <template>
-    <Head title="Compras a Proveedores" />
-
     <ErpLayout
         title="Compras y Abastecimiento"
-        subtitle="Órdenes de compra multi-ítem con IVA opcional (15%), recepción en almacén, costo promedio ponderado y asiento contable automático"
+        :subtitle="`Órdenes de compra multi-ítem con IVA opcional (${porcentajeIva}%), recepción en almacén, costo promedio ponderado y asiento contable automático`"
     >
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Paso 1: orden de compra -->
@@ -198,7 +203,7 @@ function recibirOrden(oc: { id: number }) {
 
                     <label class="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
                         <input v-model="form.aplicar_iva" type="checkbox" class="rounded border-input" />
-                        Aplicar IVA Acreditable (15%)
+                        Aplicar IVA Acreditable ({{ porcentajeIva }}%)
                     </label>
 
                     <div>
@@ -217,7 +222,7 @@ function recibirOrden(oc: { id: number }) {
                             <span>C$ {{ subtotalEstimado.toFixed(2) }}</span>
                         </div>
                         <div v-if="form.aplicar_iva" class="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>IVA Acreditable (15%)</span>
+                            <span>IVA Acreditable ({{ porcentajeIva }}%)</span>
                             <span>C$ {{ ivaEstimado.toFixed(2) }}</span>
                         </div>
                         <div class="flex items-center justify-between pt-1 border-t border-border">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { useFormulario, ejecutarAccionApi } from '@/composables/useFormulario';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
 const props = defineProps<{
@@ -72,7 +72,7 @@ const props = defineProps<{
 
 const tabActiva = ref<'flujo' | 'diario' | 'estados'>('flujo');
 
-const form = useForm({
+const form = useFormulario({
     categoria: 'Servicios de Planta',
     concepto: '',
     monto: '',
@@ -86,13 +86,11 @@ function guardarGasto() {
 }
 
 function liquidar(id: number) {
-    router.post(`/finanzas/liquidar/${id}`);
+    ejecutarAccionApi(`/finanzas/liquidar/${id}`);
 }
 </script>
 
 <template>
-    <Head title="Finanzas y Contabilidad" />
-
     <ErpLayout
         title="Finanzas Operativas y Contabilidad General"
         subtitle="Flujo de caja, cuentas por cobrar y pagar, Libro Diario de Partida Doble, Estado de Resultados y Balance General"

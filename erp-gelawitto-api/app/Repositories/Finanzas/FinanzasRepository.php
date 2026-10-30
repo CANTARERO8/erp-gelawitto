@@ -3,6 +3,7 @@
 namespace App\Repositories\Finanzas;
 
 use App\Models\Finanzas\FinanzasMovimiento;
+use App\Repositories\Configuracion\ParametrosRepository;
 use Illuminate\Database\Eloquent\Collection;
 
 class FinanzasRepository
@@ -38,8 +39,7 @@ class FinanzasRepository
 
     public function getNextFolio(): string
     {
-        $consecutivo = FinanzasMovimiento::count() + 1;
-        return sprintf('FIN-2026-%03d', $consecutivo);
+        return ParametrosRepository::siguienteFolio('folio_finanzas_seq', 'FIN-2026-%03d', 'finanzas_movimientos', 'folio');
     }
 
     public function createMovimiento(array $data): FinanzasMovimiento

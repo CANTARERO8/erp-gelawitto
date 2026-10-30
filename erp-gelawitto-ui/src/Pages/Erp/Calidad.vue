@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { useFormulario } from '@/composables/useFormulario';
 import ErpLayout from '@/Layouts/ErpLayout.vue';
 
 const props = defineProps<{
@@ -40,7 +40,7 @@ const props = defineProps<{
     rango: { minimo: number; maximo: number; dispositivo: string };
 }>();
 
-const form = useForm({
+const form = useFormulario({
     lote_id: props.pendientes[0]?.id ?? 0,
     unidades_inspeccionadas: props.pendientes[0]?.cantidad_obtenida ?? '',
     unidades_no_conformes: '0',
@@ -81,8 +81,6 @@ function claseDisposicion(disposicion: string): string {
 </script>
 
 <template>
-    <Head title="Calidad y Trazabilidad" />
-
     <ErpLayout
         title="Control de Calidad y Trazabilidad"
         subtitle="Inspección de lotes ejecutados, no conformidades con su disposición y seguimiento de insumos por lote"

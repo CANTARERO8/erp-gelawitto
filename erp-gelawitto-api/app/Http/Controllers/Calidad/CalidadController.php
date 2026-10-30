@@ -6,21 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Calidad\RegistrarInspeccionRequest;
 use App\Models\Produccion\LoteProduccion;
 use App\Repositories\Calidad\CalidadRepository;
+use App\Repositories\Configuracion\ParametrosRepository;
 use App\Repositories\Iiot\IiotRepository;
 use App\Services\Calidad\CalidadService;
-use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class CalidadController extends Controller
 {
     public function __construct(
         protected CalidadRepository $calidadRepository,
         protected CalidadService $calidadService,
-        protected IiotRepository $iiotRepository
+        protected IiotRepository $iiotRepository,
+        protected ParametrosRepository $parametrosRepository
     ) {}
 
-    public function index(): Response
+    public function index(): JsonResponse
     {
         $lotes = $this->calidadRepository->getLotesConTrazabilidad();
         $consumos = $this->calidadRepository->getConsumosPorLote($lotes->pluck('codigo_lote')->all());
@@ -71,27 +71,30 @@ class CalidadController extends Controller
             'fuera_de_rango' => (bool) $l->fuera_de_rango,
         ])->values()->all();
 
-        return Inertia::render('Erp/Calidad', [
+        return response()->json([
             'trazabilidad' => $trazabilidad,
             'pendientes' => $pendientes,
             'lecturas' => $lecturas,
             'rango' => [
-                'minimo' => (float) config('iiot.refrigerador.temperatura_minima'),
-                'maximo' => (float) config('iiot.refrigerador.temperatura_maxima'),
-                'dispositivo' => config('iiot.refrigerador.codigo'),
+                'minimo' => $this->parametrosRepository->valorDecimal('refrigerador_temp_min', 2.0),
+                'maximo' => $this->parametrosRepository->valorDecimal('refrigerador_temp_max', 6.0),
+                'dispositivo' => $this->parametrosRepository->valor('refrigerador_codigo', 'REF-01'),
             ],
         ]);
     }
 
-    public function inspeccionar(RegistrarInspeccionRequest $request, LoteProduccion $lote): RedirectResponse
+    public function inspeccionar(RegistrarInspeccionRequest $request, LoteProduccion $lote): JsonResponse
     {
-        $this->calidadService->registrarInspeccion(
+        $control = $this->calidadService->registrarInspeccion(
             $lote,
             $request->validated(),
             $request->user()->id,
             $request->ip()
         );
 
-        return back()->with('success', 'Inspección registrada y disposición aplicada al inventario.');
+        return response()->json([
+            'message' => 'Inspección registrada y disposición aplicada al inventario.',
+            'control' => $control,
+        ]);
     }
 }

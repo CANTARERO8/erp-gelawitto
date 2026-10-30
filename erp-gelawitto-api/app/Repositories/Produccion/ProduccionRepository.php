@@ -4,6 +4,7 @@ namespace App\Repositories\Produccion;
 
 use App\Models\Produccion\LoteProduccion;
 use App\Models\Produccion\Receta;
+use App\Repositories\Configuracion\ParametrosRepository;
 use Illuminate\Database\Eloquent\Collection;
 
 class ProduccionRepository
@@ -25,8 +26,7 @@ class ProduccionRepository
 
     public function getNextCodigoLote(): string
     {
-        $consecutivo = LoteProduccion::count() + 1;
-        return sprintf('LOT-2026-%03d', $consecutivo);
+        return ParametrosRepository::siguienteFolio('folio_lotes_seq', 'LOT-2026-%03d', 'lotes_produccion', 'codigo_lote');
     }
 
     public function createLote(array $data): LoteProduccion
