@@ -8,6 +8,7 @@ use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Finanzas\FinanzasRepository;
 use App\Repositories\Inventario\InventarioRepository;
 use App\Repositories\Ventas\VentasRepository;
+use App\Services\Dashboard\DashboardService;
 use Illuminate\Http\JsonResponse;
 
 class DashboardController extends Controller
@@ -16,7 +17,8 @@ class DashboardController extends Controller
         protected VentasRepository $ventasRepository,
         protected InventarioRepository $inventarioRepository,
         protected FinanzasRepository $finanzasRepository,
-        protected CatalogosRepository $catalogosRepository
+        protected CatalogosRepository $catalogosRepository,
+        protected DashboardService $dashboardService
     ) {}
 
     public function index(): JsonResponse
@@ -70,6 +72,8 @@ class DashboardController extends Controller
             'insumosCriticos' => $insumosCriticos,
             'ultimosMovimientos' => $ultimosMovimientos,
             'productosRentabilidad' => $productosRentabilidad,
+            'analisisRentabilidad' => $this->dashboardService->getAnalisisRentabilidad(),
+            'analisisCompras' => $this->dashboardService->getAnalisisCompras(),
         ]);
     }
 }
