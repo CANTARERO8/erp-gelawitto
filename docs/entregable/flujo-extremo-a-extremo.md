@@ -1,175 +1,154 @@
-# Flujo transaccional de extremo a extremo (requisito 13)
+# Flujo transaccional de extremo a extremo y trazabilidad FEFO (requisito 13)
 
-Evidencia del flujo **orden de compra → recepción de material → orden de producción → movimiento de inventario → venta → control de calidad → consolidación analítica en Dashboard** para el producto piloto Gelawitto, ejecutado sobre la arquitectura desacoplada de Gelawitto ERP (backend REST API en Laravel 11 y frontend SPA en Vue 3 + Vite).
+Evidencia del flujo **orden de compra con lote de proveedor → recepción de material → producción multinivel (BOM de 2 niveles) → rutas y centros de trabajo (OEE y Tiempo de Ciclo) → control de calidad e integración IIoT → venta con asignación FEFO → consolidación analítica en Dashboard** para la línea de postres funcionales de gelatina a base de arroz **Gelawitto**, ejecutado sobre la arquitectura desacoplada de Gelawitto ERP (backend REST API en Laravel 13 y frontend SPA en Vue 3 + Vite + PostgreSQL 16).
 
-Las operaciones se ejecutan a través de los endpoints REST de la API (`/api/compras`, `/api/produccion/lotes`, `/api/ventas`, `/api/calidad`, `/api/dashboard`) consumidos de forma reactiva por la interfaz de usuario, garantizando validaciones de tipado estricto, atomicidad en PostgreSQL y control de acceso basado en roles (`Administrador`, `Producción`, `Cajero`, `Contador`).
+El diseño operativo y la jerarquía de datos siguen el estándar de integración entre sistemas empresariales y de control de planta ANSI/ISA-95 (International Society of Automation, 2010), acoplando la planificación de requerimientos de materiales y listas de materiales multinivel (Vollmann et al., 2005; Heizer & Render, 2020) con la trazabilidad alimentaria ascendente y descendente (Comisión del Codex Alimentarius, 2020) y la medición de Eficiencia Global de Equipos (Nakajima, 1988).
 
 Todas las transacciones asignan folios atómicos inmutables gobernados por secuencias nativas de PostgreSQL (`folio_compras_seq`, `folio_lotes_seq`, `folio_ventas_seq`, `folio_turnos_seq`, `folio_calidad_seq`, `folio_finanzas_seq`, `folio_asientos_seq`), eliminando condiciones de carrera bajo concurrencia.
 
-## 1. Orden de compra y recepción de material
+---
 
-La compra tiene dos pasos separados, cada uno con su propia acción en la API y en la interfaz:
+## 1. Depuración de Catálogo y Estructura BOM de 2 Niveles con Balance de Masa
 
-1. **Crear orden de compra** (`POST /api/compras`): registra el pedido al proveedor con estado `Pendiente`. Asigna folio atómico `OC-XXXXXX`. No mueve stock, no genera movimientos en el Kardex ni en Finanzas.
-2. **Recibir en almacén** (`POST /api/compras/{orden}/recibir`): elige la condición de pago (contado o crédito a 15 días) y, en una sola transacción atómica, incrementa el stock, recalcula el costo promedio ponderado del insumo, registra el movimiento `Entrada por Compra` en el Kardex y genera el egreso o la cuenta por pagar en Finanzas junto a su asiento contable de partida doble. La orden pasa a `Recibida`. Una orden no puede recibirse dos veces.
+Se depuraron en su totalidad los registros de prueba de heladería (`SELECT count(*) FROM productos WHERE sku LIKE 'GEL-%'` = `0`) y se estructuró el catálogo industrial de **Gelawitto** con **3 productos terminados** (`tipo = 'terminado'`), **1 subensamble intermedio** (`tipo = 'semielaborado'`) y **10 insumos** de materia prima y empaque, garantizando coherencia matemática estricta en el balance de masa y volumen (Heizer & Render, 2020; Vollmann et al., 2005):
 
-Órdenes de la BOM de Gelawitto:
+### Nivel 1 → Nivel 2: Subensamble Intermedio (`SUB-GEL-BASE`)
+- **SKU:** `SUB-GEL-BASE` — *Base Gelificada de Arroz (Subensamble)* (`semielaborado`, unidad: Litro `L`).
+- **Rendimiento por batch:** `1.000 L` (500 mL de agua en cocción coloidal + 500 mL de agua fría en choque térmico = `1.000 L`).
+- **Componentes de Nivel 2 por cada `1.000 L` de base:**
 
-| Folio | Proveedor | Insumo | Cantidad | Costo unitario | Total | Recepción |
-|---|---|---|---|---|---|---|
-| OC-2026-0003 | Empaques Térmicos BioPack | Vaso reciclable 100 mL con tapa | 50 ud | C$ 8.00 | C$ 400.00 | Lote inicial |
-| OC-2026-0004 | Proveedor por definir (gelatina y agua) | Gelatina en polvo Great Value 40 g | 0.400 kg | C$ 1,125.00 | C$ 450.00 | Lote inicial |
-| OC-2026-0005 | Proveedor por definir (gelatina y agua) | Agua potable | 10 L | C$ 1.00 | C$ 10.00 | Lote inicial |
-| OC-2026-0006 | Empaques Térmicos BioPack | Vaso reciclable 100 mL con tapa | 40 ud | C$ 8.00 | C$ 320.00 | Segunda compra, recibida por API |
-| OC-2026-0007 | Empaques Térmicos BioPack | Vaso reciclable 100 mL con tapa | 10 ud | C$ 8.00 | C$ 80.00 | Tercera compra, creada y recibida desde la pantalla |
+| Código | Insumo (Nivel 2) | Cantidad por `1.000 L` | Costo Unitario | Subtotal |
+|---|---|---:|---:|---:|
+| `INS-001` | Harina de arroz micropulverizada grado alimenticio | `0.100 kg` | C$ 45.00 / kg | C$ 4.50 |
+| `INS-002` | Gelatina sin sabor de alto bloom (Great Value) | `0.080 kg` | C$ 1,125.00 / kg | C$ 90.00 |
+| `INS-003` | Agua purificada por ósmosis inversa | `1.000 L` | C$ 1.00 / L | C$ 1.00 |
+| `INS-004` | Azúcar blanca refinada | `0.050 kg` | C$ 40.00 / kg | C$ 2.00 |
+| **Total Nivel 2** | **Costo estándar por Litro de `SUB-GEL-BASE`** | **`1.000 L`** | — | **C$ 97.50 / L** |
 
-Las órdenes OC-2026-0003 a 0005 se registraron con el flujo anterior, de un solo paso. Se conservan tal como quedaron en el Kardex.
+### Nivel 0 → Nivel 1: Tres Productos Terminados (`GLW-*`)
+Cada receta de producto terminado produce un lote base de **5 vasos de 100 mL** (`0.500 L` de volumen neto por lote):
 
-Verificación del flujo separado con OC-2026-0006: al crearla, el stock de vasos se mantuvo en 40. Al recibirla, subió a 80 con un movimiento `Entrada por Compra` y un egreso de C$ 320 en Finanzas (`FIN-2026-009`). Un segundo intento de recepción fue rechazado y no duplicó nada.
+| SKU (Nivel 0) | Producto Terminado | Composición Nivel 1 (por lote de 5 vasos) | Costo Lote | Costo Unitario | Precio Venta | Margen Bruto |
+|---|---|---|---:|---:|---:|---:|
+| `GLW-TRA-100` | **Gelawitto Tradicional de Arroz** | `0.500 L` `SUB-GEL-BASE` (C$ 48.75) + `0.005 L` Vainilla y canela `INS-007` (C$ 1.60) + `5 ud` Vaso 100 mL `INS-008` (C$ 40.00) + `5 ud` Etiqueta `INS-009` (C$ 7.50) + `1 ud` Bandeja x5 `INS-010` (C$ 6.00) | C$ 103.85 | **C$ 20.77** | C$ 100.00 | **79.2%** |
+| `GLW-FRU-100` | **Gelawitto con Frutas Variadas** | `0.400 L` `SUB-GEL-BASE` (80 mL/vaso = C$ 39.00) + `0.100 kg` Mix de frutas `INS-005` (20 g/vaso = C$ 15.00) + `5 ud` Vaso `INS-008` (C$ 40.00) + `5 ud` Etiqueta `INS-009` (C$ 7.50) + `1 ud` Bandeja `INS-010` (C$ 6.00) | C$ 107.50 | **C$ 21.50** | C$ 115.00 | **81.3%** |
+| `GLW-LCO-100` | **Gelawitto Tres Leches y Arroz** | `0.400 L` `SUB-GEL-BASE` (80 mL/vaso = C$ 39.00) + `0.100 kg` Leche condensada `INS-006` (20 g/vaso = C$ 13.50) + `0.005 L` Vainilla `INS-007` (C$ 1.60) + `5 ud` Vaso `INS-008` (C$ 40.00) + `5 ud` Etiqueta `INS-009` (C$ 7.50) + `1 ud` Bandeja `INS-010` (C$ 6.00) | C$ 107.60 | **C$ 21.52** | C$ 120.00 | **82.1%** |
 
-## 2. Orden de producción y ejecución
+---
 
-La producción tiene dos pasos separados:
+## 2. Orden de compra, recepción y trazabilidad de lote de proveedor (`lotes_insumo`)
 
-1. **Programar orden de producción** (`POST /api/produccion/lotes`): registra la orden con estado `Programada`, asigna folio atómico `LOT-XXXXXX`, la receta y la meta. No descuenta insumos ni suma producto, y su cantidad obtenida y costos quedan pendientes.
-2. **Ejecutar lote** (`POST /api/produccion/lotes/{lote}/ejecutar`): con la cantidad real obtenida, descuenta los insumos de la receta escalados a la meta (0.040 kg de gelatina, 0.500 L de agua y 5 vasos por lote de 5), calcula el costo y la merma, e ingresa el producto terminado al Kardex con el movimiento `Ingreso de Producción`. La orden pasa a `Finalizado`. Una orden no puede ejecutarse dos veces, y si faltan insumos al ejecutarla, la API lo rechaza sin descontar nada.
+La compra opera en dos pasos desacoplados y registra para cada línea el **lote de origen del proveedor** (`lote_proveedor`) y su **fecha de vencimiento** (`fecha_vencimiento`), creando registros trazables en `lotes_insumo` al recibir la mercancía en almacén (Chopra & Meindl, 2019; Comisión del Codex Alimentarius, 2020):
 
-| Lote | Receta | Programado | Obtenido | Merma | Costo del lote | Costo por vaso | Cómo se registró |
-|---|---|---|---|---|---|---|---|
-| LOT-2026-003 | Gelawitto tradicional | 5 | 5 | 0 | C$ 85.50 | C$ 17.10 | Flujo anterior, de un solo paso |
-| LOT-2026-004 | Gelawitto tradicional | 5 | 4 | 1 | C$ 85.50 | C$ 21.38 | Flujo anterior, de un solo paso |
-| LOT-2026-005 | Gelawitto tradicional | 5 | 5 | 0 | C$ 85.50 | C$ 17.10 | Programada por API y ejecutada por API |
-| LOT-2026-006 | Gelawitto tradicional | 5 | 5 | 0 | C$ 85.50 | C$ 17.10 | Programada y ejecutada desde la pantalla |
+1. **Crear orden de compra** (`POST /api/compras`): registra el pedido con estado `Pendiente`, folio atómico `OC-XXXXXX`, `lote_proveedor` y `fecha_vencimiento` por línea. No mueve inventario ni genera asientos contables.
+2. **Recibir en almacén** (`POST /api/compras/{orden}/recibir`): incrementa el stock, recalcula el costo promedio ponderado del insumo, crea el registro en `lotes_insumo` con su `cantidad_disponible` para consumo FEFO, registra `Entrada por Compra` en el Kardex y genera la transacción financiera y el asiento contable de partida doble.
 
-Verificación del flujo separado con LOT-2026-005: al programarla, los insumos y el stock de producto se mantuvieron igual. Al ejecutarla, descontó 0.040 kg de gelatina, 0.500 L de agua y 5 vasos, y el producto pasó de 4 a 9 unidades. El costo vigente quedó en C$ 17.94, que es el promedio ponderado de 4 unidades a C$ 19.00 y 5 unidades a C$ 17.10. Un segundo intento de ejecución fue rechazado.
+Órdenes de compra registradas en el sistema (las fechas de vencimiento son relativas a la fecha de carga del semillero):
 
-## 3. Movimientos de inventario (Kardex)
+| Folio | Proveedor | Insumos y lotes de proveedor (`lote_proveedor`) | Vencimiento | Total | Condición |
+|---|---|---|---|---:|---|
+| `OC-2026-0001` | Agroindustria Arrocera de Sébaco S.A. | `INS-001` Harina de arroz (`30`, lote `LPR-ARR-2601`); `INS-004` Azúcar (`34.875`, lote `LPR-AZU-2601`) | 2027-03-04, 2027-05-03 | C$ 2,745.00 | Contado |
+| `OC-2026-0002` | Distribuidora Alimentaria del Valle S.A. | `INS-002` Gelatina (`6`, lote `LPR-GEL-2601`); `INS-003` Agua (`150`, lote `LPR-AGU-2601`); `INS-006` Leche condensada (`10`, lote `LPR-LCO-2601`); `INS-007` Vainilla (`4.688`, lote `LPR-VAI-2601`) | 2027-01-03, 2027-02-02, 2027-04-03, 2027-05-03 | C$ 9,750.00 | Contado |
+| `OC-2026-0003` | Frutas Selectas de la Montaña | `INS-005` Mix de frutas (`8`, lote `LPR-FRU-2601`) | 2026-11-16 | C$ 1,200.00 | Contado |
+| `OC-2026-0004` | Empaques Térmicos BioPack | `INS-008` Vaso 100 mL (`250`, lote `LPR-VAS-2601`); `INS-009` Etiqueta (`300`, lote `LPR-ETI-2601`); `INS-010` Bandeja x5 (`70.833`, lote `LPR-BAN-2601`) | 2027-11-04 | C$ 2,875.00 | Crédito |
 
-| Referencia | Tipo de movimiento | Artículo | Cantidad | Saldo resultante |
-|---|---|---|---|---|
-| OC-2026-0003 | Entrada por Compra | Vaso reciclable 100 mL con tapa | +50.000 | 50.000 |
-| OC-2026-0004 | Entrada por Compra | Gelatina en polvo Great Value 40 g | +0.400 | 0.400 |
-| OC-2026-0005 | Entrada por Compra | Agua potable | +10.000 | 10.000 |
-| LOT-2026-003 | Consumo de Producción | Gelatina / Agua / Vasos | -0.040 / -0.500 / -5.000 | 0.360 / 9.500 / 45.000 |
-| LOT-2026-003 | Ingreso de Producción | Gelawitto tradicional | +5.000 | 5.000 |
-| LOT-2026-004 | Consumo de Producción | Gelatina / Agua / Vasos | -0.040 / -0.500 / -5.000 | 0.320 / 9.000 / 40.000 |
-| LOT-2026-004 | Ingreso de Producción | Gelawitto tradicional | +4.000 | 9.000 |
-| VTA-2026-0003 | Salida por Venta | Gelawitto tradicional | -3.000 | 6.000 |
-| VTA-2026-0004 | Salida por Venta | Gelawitto tradicional | -2.000 | 4.000 |
+---
 
-## 4. Venta y despacho
+## 3. Centros de Trabajo, Rutas de Operación, OEE y Tiempo de Ciclo
 
-| Folio | Cliente | Cantidad | Método de pago | Total |
-|---|---|---|---|---|
-| VTA-2026-0003 | Cliente de Mostrador | 3 | Efectivo | C$ 300.00 |
-| VTA-2026-0004 | Cafetería y Pastelería El Mirador | 2 | Transferencia | C$ 200.00 |
+Se modelaron en PostgreSQL las tablas `centros_trabajo` y `rutas_operacion` para gobernar las secuencias productivas y los tiempos estándar de preparación (`tiempo_preparacion_min`) y de ciclo unitario (`tiempo_ciclo_min_por_unidad`), permitiendo calcular el **Tiempo de Ciclo** y la **Eficiencia Global de Equipos (OEE)** conforme a la formulación de Nakajima (1988):
 
-Cada venta (`POST /api/ventas`) requiere un turno de caja abierto (`POST /api/ventas/turnos/abrir`, folio `TRN-XXXXXX`), asigna folio atómico inmutable `VEN-XXXXXX`, descuenta el stock del producto en el Kardex (`Salida por Venta`), actualiza los acumulados del turno, asienta el ingreso en Finanzas y genera el asiento contable de partida doble (`AS-XXXXXX`).
+$$\text{OEE} = \text{Disponibilidad} \times \text{Rendimiento} \times \text{Calidad}$$
 
-## 5. Cambios respecto al diseño original
+### Centros de Trabajo (`centros_trabajo`)
 
-Con la separación de la orden de compra (sección 1) y de la orden de producción (sección 2), el flujo sigue la secuencia de cinco pasos con dos mejoras arquitectónicas clave:
-
-1. **Costo unitario del producto por promedio ponderado:** Al producir, el costo vigente del producto se recalcula como promedio ponderado entre el inventario existente y el lote nuevo. Antes se tomaba el costo del último lote. Con los dos lotes anteriores, el costo vigente pasó de C$ 21.38 a **C$ 19.00** ((5 × 17.10 + 85.50) / 9). Los costos ya registrados en el Kardex y en las ventas no se modifican.
-2. **Folios atómicos inmutables en PostgreSQL:** Se sustituyeron las consultas `Model::count() + 1` por 7 secuencias nativas de PostgreSQL con función atómica `nextval(...)` (`folio_compras_seq`, `folio_lotes_seq`, `folio_ventas_seq`, `folio_turnos_seq`, `folio_finanzas_seq`, `folio_calidad_seq`, `folio_asientos_seq`), blindando el flujo contra colisiones de folios bajo múltiples operadores simultáneos.
-
-## 6. Calidad y trazabilidad por lote (requisito 14)
-
-Cada lote ejecutado pasa por una inspección de calidad antes de considerarse liberado. La API (`POST /api/calidad`) y la pantalla **Calidad y Trazabilidad** registran la inspección (folio atómico `CAL-XXXXXX`) y aplican una de tres disposiciones:
-
-| Disposición | Cuándo aplica | Efecto en inventario |
+| Código | Centro de Trabajo | Capacidad / Hora |
 |---|---|---|
-| **Liberación** | Sin unidades no conformes | Ninguno. Las unidades quedan disponibles en inventario vendible. |
-| **Retrabajo** | Hay unidades no conformes que se corregirán | Retira esas unidades del stock vendible y registra `Retrabajo por Calidad` en el Kardex. |
-| **Scrap** | Hay unidades no conformes que se desechan | Da de baja esas unidades, registra `Scrap por Calidad` en el Kardex y calcula el costo perdido. |
+| `CT-01` | Estación de Cocción e Hidratación Coloidal | `40.00 unidades/h` |
+| `CT-02` | Mesa de Mezclado, Dosificación y Envasado | `120.00 unidades/h` |
+| `CT-03` | Cámara de Refrigeración y Gelificación Controlada (REF-01) | `200.00 unidades/h` |
+| `CT-04` | Estación de Inspección de Calidad y Etiquetado | `150.00 unidades/h` |
 
-Reglas de negocio: solo se inspeccionan lotes ya ejecutados, cada lote admite una única inspección, no se puede liberar un lote con unidades no conformes, la no conformidad debe describirse, y no se puede retirar más stock del disponible.
+El esquema no guarda costo por hora de centro de trabajo; el costo de los lotes proviene de la BOM (materiales y empaque).
 
-Evidencia de la demostración:
+### Ejecución de Lotes, Consumo FEFO de Subensamble y Métricas OEE (`GET /api/produccion/oee`)
 
-| Lote | Inspección | Unidades no conformes | Disposición | Costo perdido | Estado de calidad |
-|---|---|---|---|---|---|
-| LOT-2026-005 | CC-2026-001 | 0 de 5 | Liberación | C$ 0.00 | Liberado |
-| LOT-2026-006 | CC-2026-002 | 1 de 5 (gelificación incompleta en 1 vaso) | Scrap | C$ 17.64 | Scrap |
+Al ejecutar un lote de producto terminado (`POST /api/produccion/lotes/{lote}/ejecutar`), `ProduccionService` descuenta bajo criterio **FEFO** tanto los lotes de materia prima/empaque (`lotes_insumo`) como el lote del subensamble intermedio (`SUB-GEL-BASE` desde `LOT-2026-001`, de 20.000 L), registrando la trazabilidad exacta en `consumos_lote`:
 
-Al dar de baja una unidad de `LOT-2026-006`, el stock de producto pasó de 14 a 13 y quedó en el Kardex con referencia del lote. Un segundo intento de inspección de `LOT-2026-005` fue rechazado.
+| Lote | Producto | Obtenido | Conformes | T. Plan. (min) | T. Real (min) | Paro (min) | Ciclo Est. (min/ud) | Ciclo Real (min/ud) | Disp. | Rend. | Calidad | OEE |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `LOT-2026-001` | Base Gelificada de Arroz (Subensamble) | 20 | 20 | 415 | 415 | 5 | 20.75 | 20.50 | 98.8% | 100% | 100% | **98.8%** |
+| `LOT-2026-002` | Gelawitto Tradicional de Arroz | 30 | 30 | 193 | 200 | 8 | 6.43 | 6.40 | 96% | 100% | 100% | **96%** |
+| `LOT-2026-003` | Gelawitto con Frutas Variadas | 35 | 35 | 240 | 220 | 10 | 6.86 | 6.00 | 95.5% | 100% | 100% | **95.5%** |
+| `LOT-2026-004` | Gelawitto Tres Leches y Arroz | 36 | 36 | 237.2 | 220 | 6 | 6.59 | 5.94 | 97.3% | 100% | 100% | **97.3%** |
+| `LOT-2026-005` | Gelawitto Tradicional de Arroz | 25 | 25 | 163 | 175 | 5 | 6.52 | 6.80 | 97.1% | 95.9% | 100% | **93.1%** |
+| `LOT-2026-006` | Gelawitto con Frutas Variadas | 10 | 9 | 80 | 105 | 5 | 8.00 | 10.00 | 95.2% | 80% | 90% | **68.6%** |
+| **Promedio Global** | **Consolidado de planta (6 lotes)** | — | — | — | — | — | **9.19** | **9.27** | **96.7%** | **96%** | **98.3%** | **91.2%** |
 
-**Trazabilidad por lote:** La pantalla muestra, para cada lote, los insumos que consumió (leídos del Kardex por referencia de lote), las unidades obtenidas, el estado de calidad y cada inspección con su disposición. Así se va del lote hacia atrás, a los insumos, y hacia adelante, al resultado de la inspección.
+---
 
-## 7. Consolidación Analítica en Tiempo Real en Dashboard (Rentabilidad y MRP)
+## 4. Calidad, Integración IIoT y Trazabilidad Bidireccional FEFO
 
-El flujo transaccional anterior no termina en el registro contable: alimenta directamente el cuadro de mando analítico en tiempo real a través del endpoint `GET /api/dashboard` y la vista nativa de alto rendimiento en Vue 3 + Apache ECharts (`Dashboard.vue`).
+Cada lote ejecutado pasa por una inspección en `POST /api/calidad` (folios `CC-2026-001` a `CC-2026-006`). Cuando el sensor de la cámara fría `REF-01` reportó en `POST /api/iiot/lecturas` una excursión térmica de **`8.90 °C`** (superando el umbral máximo de `6.0 °C`), el lote `LOT-2026-006` fue retenido e inspeccionado bajo el folio `CC-2026-006`, dictaminando la disposición de **Scrap** para `1` vaso con sinéresis superficial (pérdida de **C$ 21.50** en Kardex).
 
-### Control Financiero y Rentabilidad Comercial Real
-1. **Ingreso y Utilidad Neta:** Sobre las transacciones de venta completadas se calcula el ingreso total acumulado (C$ 8,605.00), el costo real de materias primas consumidas (C$ 3,217.75) y la utilidad bruta neta (C$ 5,387.25), arrojando un margen bruto promedio global del 62.6%.
-2. **Sabor Más Rentable:** El producto con mayor retorno es identificado automáticamente (Gelato Fior di Nata Clásico con 64.9% de margen).
-3. **Curva de Pareto:** Gráfico de Pareto (80/20) que correlaciona los ingresos por producto y el porcentaje acumulado, permitiendo focalizar la producción en los sabores de mayor rotación y margen.
-4. **Costeo de Recetas Maestras vs Precio de Venta:** Comparativa visual y tabular del costo unitario calculado por fórmula contra el precio de venta al público en mostrador.
+| Lote | Producto | Vencimiento | Inspección | No Conformes | Disposición | Costo Perdido | Estado |
+|---|---|---|---|---:|---|---:|---|
+| `LOT-2026-001` | Base Gelificada de Arroz (Subensamble) | 2026-11-14 | `CC-2026-001` | 0 de 20 L | Liberación | C$ 0.00 | Liberado |
+| `LOT-2026-002` | Gelawitto Tradicional de Arroz | 2026-11-16 | `CC-2026-002` | 0 de 30 | Liberación | C$ 0.00 | Liberado |
+| `LOT-2026-003` | Gelawitto con Frutas Variadas | 2026-11-15 | `CC-2026-003` | 0 de 35 | Liberación | C$ 0.00 | Liberado |
+| `LOT-2026-004` | Gelawitto Tres Leches y Arroz | 2026-11-18 | `CC-2026-004` | 0 de 36 | Liberación | C$ 0.00 | Liberado |
+| `LOT-2026-005` | Gelawitto Tradicional de Arroz | 2026-11-19 | `CC-2026-005` | 0 de 25 | Liberación | C$ 0.00 | Liberado |
+| `LOT-2026-006` | Gelawitto con Frutas Variadas | 2026-11-18 | `CC-2026-006` | 1 de 10 | **Scrap** | **C$ 21.50** | Scrap |
 
-### Abastecimiento y Planificación de Compras (MRP)
-1. **Monitoreo de Inventario y Consumo Diario:** Cruce de saldos de Kardex de insumos contra el consumo real de los últimos 30 días para determinar los días de inventario disponible por materia prima.
-2. **Semáforo Operativo de Reorden:** Clasificación automática de cada insumo en tres estados:
-   - `Reordenar`: Stock actual por debajo del stock mínimo de seguridad (detectados 2 insumos críticos: Frambuesa silvestre IQF con 6.5 kg frente a 10 kg mínimo, y Pulpa de durazno con 8 kg frente a 10 kg mínimo).
-   - `Vigilar`: Insumos con cobertura menor a 14 días.
-   - `Suficiente`: Insumos con stock holgado para la demanda proyectada.
-3. **Presupuesto Sugerido de Compra a 14 Días:** Cálculo automatizado de la cantidad y valor monetario sugerido a comprar por insumo y por proveedor habitual (C$ 5,032.50 requeridos para restablecer stock de seguridad y cubrir 14 días de producción).
-4. **Histórico Cronológico de Precios de Compra:** Visualización de tendencias de costo unitario por fecha real de emisión de órdenes de compra (27 y 28 de octubre).
+---
 
-## 8. Integración IIoT del refrigerador (requisito 15)
+## 5. Venta y Despacho con Asignación Automática FEFO (`lote_produccion_id`)
 
-El refrigerador de los lotes cuenta con monitoreo continuo de temperatura. Opera mediante un dispositivo físico (DS18B20 con ESP32) o a través del comando simulador integrado en Laravel, utilizando el mismo contrato de ingesta:
+Al registrar una venta (`POST /api/ventas`), `VentasService` selecciona automáticamente los lotes de producción con `estado_calidad = 'Liberado'` y `cantidad_disponible > 0` ordenados por **`fecha_vencimiento ASC NULLS LAST, id ASC`** (criterio *First Expired, First Out* — FEFO). Si la cantidad demandada supera el remanente del lote más próximo a vencer, el servicio divide automáticamente la línea de venta entre los lotes necesarios y vincula cada `venta_lineas.lote_produccion_id`. Los lotes en estado `Scrap` (`LOT-2026-006`) o `Retenido` quedan bloqueados para despacho comercial.
 
-**Flujo:**
-1. El sensor (o el simulador) envía la temperatura a `POST /api/iiot/lecturas` con el encabezado `X-IIoT-Token`.
-2. La API guarda la lectura en `lecturas_temperatura` y evalúa los umbrales dinámicos gobernados en PostgreSQL (`refrigerador_temp_min` = 2.0 °C y `refrigerador_temp_max` = 6.0 °C en la tabla `parametros`).
-3. Si la lectura está fuera de rango, los lotes ejecutados que esperan inspección pasan automáticamente a estado de calidad `Retenido` y se registra una alerta en la bitácora.
-4. Calidad inspecciona los lotes retenidos y decide su disposición (Liberación, Retrabajo o Scrap).
+| Folio Venta | Cliente | Productos Despachados | Lotes asignados (FEFO) | Método de Pago | Total |
+|---|---|---|---|---|---:|
+| `VTA-2026-0001` | Cliente de Mostrador | `8 ud` Gelawitto con Frutas Variadas + `10 ud` Gelawitto Tradicional de Arroz | LOT-2026-002 (vence 2026-11-16) / LOT-2026-003 (vence 2026-11-15) | Efectivo | C$ 1,920.00 |
+| `VTA-2026-0002` | Cafetería y Pastelería El Mirador | `12 ud` Gelawitto con Frutas Variadas + `10 ud` Gelawitto Tres Leches y Arroz | LOT-2026-003 (vence 2026-11-15) / LOT-2026-004 (vence 2026-11-18) | Tarjeta | C$ 2,580.00 |
+| `VTA-2026-0003` | Kiosco Estudiantil y Comedor Saludable UNI | `15 ud` Gelawitto Tradicional de Arroz + `8 ud` Gelawitto Tres Leches y Arroz | LOT-2026-002 (vence 2026-11-16) / LOT-2026-004 (vence 2026-11-18) | Transferencia | C$ 2,460.00 |
+| `VTA-2026-0004` | Cafetería y Pastelería El Mirador | `5 ud` Gelawitto con Frutas Variadas + `5 ud` Gelawitto Tradicional de Arroz | LOT-2026-003 (vence 2026-11-15) / LOT-2026-005 (vence 2026-11-19) | Efectivo | C$ 1,075.00 |
 
-**Contrato del dispositivo:**
-```json
-POST /api/iiot/lecturas
-X-IIoT-Token: <token configurado>
-Content-Type: application/json
+---
 
-{ "temperatura": 4.2, "dispositivo": "REF-01", "fecha_lectura": "2026-10-21 04:50:00" }
-```
-Respuesta `201`: `{ "id", "temperatura", "fuera_de_rango", "lotes_retenidos" }`. Sin token o con token incorrecto: `401`. Temperatura no numérica: `422`.
+## 6. Consolidación Analítica en Tiempo Real en Dashboard (Rentabilidad, MRP y OEE)
 
-**Simulador:**
+El endpoint `GET /api/dashboard` y la vista nativa `Dashboard.vue` consolidan en tiempo real tres bloques analíticos sobre PostgreSQL:
+
+1. **Control Financiero y Rentabilidad Comercial Real:**
+   - **Ingreso Total Acumulado:** `C$ 8,035.00` sobre las 4 ventas completadas.
+   - **Costo Real de Ventas (BOM 2 Niveles):** `C$ 1,547.96`.
+   - **Utilidad Bruta Neta:** `C$ 6,487.04`, con un **margen bruto promedio global de `80.7%`**. El margen considera materiales y empaque; no incluye mano de obra ni energía.
+2. **Abastecimiento y Planificación de Compras (MRP a 14 días):**
+   - **Insumos en Estado Crítico (`Reordenar`):** `2` insumos por debajo del stock mínimo: `INS-006` Leche condensada azucarada pasteurizada (`9.280` vs `10.000` mínimo); `INS-005` Mix de frutas naturales en cubos (`7.100` vs `10.000` mínimo).
+   - **Presupuesto Sugerido de Compra (14 días):** `C$ 3,379.50`.
+   - **Valor del inventario:** insumos `C$ 12,903.64` y productos `C$ 2,097.06`.
+3. **Eficiencia Global de Equipos (OEE) y Tiempo de Ciclo:**
+   - **OEE Global de Planta:** `91.2%` (`Disponibilidad: 96.7%`, `Rendimiento: 96%`, `Calidad: 98.3%`).
+   - **Tiempo de Ciclo Promedio:** `9.27 min/ud` real frente a `9.19 min/ud` estándar.
+
+> **Nota sobre el origen de los datos.** Los lotes, las ventas y las órdenes de compra los carga el semillero `DatabaseSeeder`. Los consumos por lote, los saldos por lote, el Kardex y el stock se reconstruyen con `ConsistenciaInventarioSeeder`, que aplica la BOM completa y el orden FEFO. Los tiempos reales de cada lote son valores del semillero, no mediciones en planta.
+
+---
+
+## 7. Cómo reproducir la evidencia
+
+### 1. Pruebas Automatizadas de Backend (Laravel 13 — 57 pruebas, 653 aserciones)
 ```bash
 cd erp-gelawitto-api
-php artisan iiot:simular --lecturas=10 --intervalo=60
-php artisan iiot:simular --lecturas=5 --excursion
-```
-
-## 9. Cómo reproducir la evidencia
-
-La verificación integral del flujo se reproduce de forma automatizada en ambas capas desacopladas del ERP:
-
-### 1. Pruebas Automatizadas de Backend (Laravel 11)
-```bash
-cd erp-gelawitto-api
-
-# Ejecutar la suite completa de 45 pruebas (404 aserciones)
+php artisan migrate:fresh --seed
 php artisan test
-
-# O ejecutar específicamente las pruebas del flujo transaccional
-php artisan test --filter=ComprasRecepcionTest
-php artisan test --filter=ProduccionOrdenTest
-php artisan test --filter=ProduccionCostoPromedioTest
-php artisan test --filter=CalidadTest
-php artisan test --filter=IiotTest
-php artisan test --filter=DashboardControllerTest
+php artisan test --filter=BomOeeTrazabilidadFefoTest
 ```
 
 ### 2. Pruebas Unitarias y Compilación del Frontend (Vue 3 + Vite)
 ```bash
 cd ../erp-gelawitto-ui
-
-# Pruebas unitarias de componentes y temas (Vitest)
 npm run test
-
-# Compilación estricta y chequeo de tipos TypeScript
 npm run build
 ```
 
@@ -179,8 +158,13 @@ cd ../erp-gelawitto-ui
 node tests/e2e.mjs
 ```
 
-## 10. Pendientes y Evolución del Diseño
+---
 
-- **Lote de Proveedor en Compras:** Incorporar el registro del número de lote del proveedor en la recepción de materia prima para extender la trazabilidad hacia el origen externo.
-- **Trazabilidad Lote-Cliente:** Hoy las ventas descuentan del stock general del producto. Se proyecta asignar el lote de salida en el punto de venta para trazabilidad hacia el consumidor final.
-- **Ventana Temporal de Retención IIoT:** Acotar la retención térmica a los lotes ingresados al refrigerador dentro de una ventana móvil de 24 horas, evitando retener lotes de demostración previos.
+## 8. Referencias (Formato APA 7)
+
+- Chopra, S., & Meindl, P. (2019). *Administración de la cadena de suministro: Estrategia, planeación y operación* (6.ª ed.). Pearson Educación.
+- Comisión del Codex Alimentarius. (2020). *Principios generales de higiene de los alimentos (CXC 1-1969, Rev. 2020)*. Organización de las Naciones Unidas para la Alimentación y la Agricultura (FAO) / Organización Mundial de la Salud (OMS).
+- Heizer, J., & Render, B. (2020). *Principios de administración de operaciones* (11.ª ed.). Pearson Educación.
+- International Society of Automation. (2010). *ANSI/ISA-95.00.01-2010 (IEC 62264-1 Mod): Enterprise-control system integration — Part 1: Models and terminology*. ISA.
+- Nakajima, S. (1988). *Introduction to TPM: Total productive maintenance*. Productivity Press.
+- Vollmann, T. E., Berry, W. L., Whybark, D. C., & Jacobs, F. R. (2005). *Manufacturing planning and control for supply chain management* (5.ª ed.). McGraw-Hill.

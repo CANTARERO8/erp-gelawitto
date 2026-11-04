@@ -1,0 +1,56 @@
+fecha,referencia,tipo_movimiento,tipo_item,nombre_item,cantidad,stock_resultante,costo_unitario
+2026-10-30 06:00:00,OC-2026-0001,Entrada por Compra,insumo,Harina de arroz blanco seleccionado,30.000,30.000,45.00
+2026-10-30 06:00:00,OC-2026-0001,Entrada por Compra,insumo,Azúcar blanca cristalina refinada,34.875,34.875,40.00
+2026-10-31 06:00:00,OC-2026-0002,Entrada por Compra,insumo,Gelatina en polvo Great Value 40 g,6.000,6.000,1125.00
+2026-10-31 06:00:00,OC-2026-0002,Entrada por Compra,insumo,Agua purificada tratada (ósmosis inversa),150.000,150.000,1.00
+2026-10-31 06:00:00,OC-2026-0002,Entrada por Compra,insumo,Leche condensada azucarada pasteurizada,10.000,10.000,135.00
+2026-10-31 06:00:00,OC-2026-0002,Entrada por Compra,insumo,Extracto natural de vainilla y canela,4.688,4.688,320.00
+2026-11-01 06:00:00,OC-2026-0003,Entrada por Compra,insumo,"Mix de frutas naturales en cubos (fresa, durazno y kiwi)",8.000,8.000,150.00
+2026-11-01 08:00:00,LOT-2026-001,Consumo de Producción,insumo,Harina de arroz blanco seleccionado,-2.000,28.000,45.00
+2026-11-01 08:00:00,LOT-2026-001,Consumo de Producción,insumo,Gelatina en polvo Great Value 40 g,-1.600,4.400,1125.00
+2026-11-01 08:00:00,LOT-2026-001,Consumo de Producción,insumo,Agua purificada tratada (ósmosis inversa),-20.000,130.000,1.00
+2026-11-01 08:00:00,LOT-2026-001,Consumo de Producción,insumo,Azúcar blanca cristalina refinada,-1.000,33.875,40.00
+2026-11-01 14:55:00,LOT-2026-001,Ingreso de Producción,producto,Base Gelificada de Arroz (Subensamble),20.000,20.000,97.50
+2026-11-02 06:00:00,OC-2026-0004,Entrada por Compra,insumo,Vaso reciclable biorientado 100 mL con tapa domo,250.000,250.000,8.00
+2026-11-02 06:00:00,OC-2026-0004,Entrada por Compra,insumo,Etiqueta autoadhesiva impermeable Gelawitto,300.000,300.000,1.50
+2026-11-02 06:00:00,OC-2026-0004,Entrada por Compra,insumo,Bandeja termoformada empaque secundario x5 vasos,70.833,70.833,6.00
+2026-11-02 08:00:00,LOT-2026-002,Consumo de Producción,producto,Base Gelificada de Arroz (Subensamble),-3.000,17.000,97.50
+2026-11-02 08:00:00,LOT-2026-002,Consumo de Producción,insumo,Extracto natural de vainilla y canela,-0.030,4.658,320.00
+2026-11-02 08:00:00,LOT-2026-002,Consumo de Producción,insumo,Vaso reciclable biorientado 100 mL con tapa domo,-30.000,220.000,8.00
+2026-11-02 08:00:00,LOT-2026-002,Consumo de Producción,insumo,Etiqueta autoadhesiva impermeable Gelawitto,-30.000,270.000,1.50
+2026-11-02 08:00:00,LOT-2026-002,Consumo de Producción,insumo,Bandeja termoformada empaque secundario x5 vasos,-6.000,64.833,6.00
+2026-11-02 11:20:00,LOT-2026-002,Ingreso de Producción,producto,Gelawitto Tradicional de Arroz,30.000,30.000,20.77
+2026-11-02 13:00:00,LOT-2026-003,Consumo de Producción,producto,Base Gelificada de Arroz (Subensamble),-2.800,14.200,97.50
+2026-11-02 13:00:00,LOT-2026-003,Consumo de Producción,insumo,"Mix de frutas naturales en cubos (fresa, durazno y kiwi)",-0.700,7.300,150.00
+2026-11-02 13:00:00,LOT-2026-003,Consumo de Producción,insumo,Vaso reciclable biorientado 100 mL con tapa domo,-35.000,185.000,8.00
+2026-11-02 13:00:00,LOT-2026-003,Consumo de Producción,insumo,Etiqueta autoadhesiva impermeable Gelawitto,-35.000,235.000,1.50
+2026-11-02 13:00:00,LOT-2026-003,Consumo de Producción,insumo,Bandeja termoformada empaque secundario x5 vasos,-7.000,57.833,6.00
+2026-11-02 16:40:00,LOT-2026-003,Ingreso de Producción,producto,Gelawitto con Frutas Variadas,35.000,35.000,21.50
+2026-11-03 08:30:00,LOT-2026-004,Consumo de Producción,producto,Base Gelificada de Arroz (Subensamble),-2.880,11.320,97.50
+2026-11-03 08:30:00,LOT-2026-004,Consumo de Producción,insumo,Leche condensada azucarada pasteurizada,-0.720,9.280,135.00
+2026-11-03 08:30:00,LOT-2026-004,Consumo de Producción,insumo,Extracto natural de vainilla y canela,-0.036,4.622,320.00
+2026-11-03 08:30:00,LOT-2026-004,Consumo de Producción,insumo,Vaso reciclable biorientado 100 mL con tapa domo,-36.000,149.000,8.00
+2026-11-03 08:30:00,LOT-2026-004,Consumo de Producción,insumo,Etiqueta autoadhesiva impermeable Gelawitto,-36.000,199.000,1.50
+2026-11-03 08:30:00,LOT-2026-004,Consumo de Producción,insumo,Bandeja termoformada empaque secundario x5 vasos,-7.200,50.633,6.00
+2026-11-03 12:10:00,LOT-2026-004,Ingreso de Producción,producto,Gelawitto Tres Leches y Arroz,36.000,36.000,21.52
+2026-11-03 14:00:00,LOT-2026-005,Consumo de Producción,producto,Base Gelificada de Arroz (Subensamble),-2.500,8.820,97.50
+2026-11-03 14:00:00,LOT-2026-005,Consumo de Producción,insumo,Extracto natural de vainilla y canela,-0.025,4.597,320.00
+2026-11-03 14:00:00,LOT-2026-005,Consumo de Producción,insumo,Vaso reciclable biorientado 100 mL con tapa domo,-25.000,124.000,8.00
+2026-11-03 14:00:00,LOT-2026-005,Consumo de Producción,insumo,Etiqueta autoadhesiva impermeable Gelawitto,-25.000,174.000,1.50
+2026-11-03 14:00:00,LOT-2026-005,Consumo de Producción,insumo,Bandeja termoformada empaque secundario x5 vasos,-5.000,45.633,6.00
+2026-11-03 16:55:00,LOT-2026-005,Ingreso de Producción,producto,Gelawitto Tradicional de Arroz,25.000,55.000,20.77
+2026-11-03 23:07:01,LOT-2026-006,Consumo de Producción,producto,Base Gelificada de Arroz (Subensamble),-0.800,8.020,97.50
+2026-11-03 23:07:01,LOT-2026-006,Consumo de Producción,insumo,"Mix de frutas naturales en cubos (fresa, durazno y kiwi)",-0.200,7.100,150.00
+2026-11-03 23:07:01,LOT-2026-006,Consumo de Producción,insumo,Vaso reciclable biorientado 100 mL con tapa domo,-10.000,114.000,8.00
+2026-11-03 23:07:01,LOT-2026-006,Consumo de Producción,insumo,Etiqueta autoadhesiva impermeable Gelawitto,-10.000,164.000,1.50
+2026-11-03 23:07:01,LOT-2026-006,Consumo de Producción,insumo,Bandeja termoformada empaque secundario x5 vasos,-2.000,43.633,6.00
+2026-11-04 00:07:01,VTA-2026-0001,Salida por Venta,producto,Gelawitto Tradicional de Arroz,-10.000,45.000,20.77
+2026-11-04 00:07:01,VTA-2026-0001,Salida por Venta,producto,Gelawitto con Frutas Variadas,-8.000,27.000,21.50
+2026-11-04 00:52:01,LOT-2026-006,Ingreso de Producción,producto,Gelawitto con Frutas Variadas,10.000,37.000,21.50
+2026-11-04 01:07:01,LOT-2026-006,Scrap por Calidad,producto,Gelawitto con Frutas Variadas,-1.000,36.000,21.50
+2026-11-04 01:07:01,VTA-2026-0002,Salida por Venta,producto,Gelawitto con Frutas Variadas,-12.000,24.000,21.50
+2026-11-04 01:07:01,VTA-2026-0002,Salida por Venta,producto,Gelawitto Tres Leches y Arroz,-10.000,26.000,21.52
+2026-11-04 02:07:02,VTA-2026-0003,Salida por Venta,producto,Gelawitto Tradicional de Arroz,-15.000,30.000,20.77
+2026-11-04 02:07:02,VTA-2026-0003,Salida por Venta,producto,Gelawitto Tres Leches y Arroz,-8.000,18.000,21.52
+2026-11-04 03:07:02,VTA-2026-0004,Salida por Venta,producto,Gelawitto Tradicional de Arroz,-5.000,25.000,20.77
+2026-11-04 03:07:02,VTA-2026-0004,Salida por Venta,producto,Gelawitto con Frutas Variadas,-5.000,19.000,21.50

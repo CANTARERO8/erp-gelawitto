@@ -1,0 +1,11 @@
+folio,proveedor,insumo,cantidad,costo_unitario,lote_proveedor,fecha_vencimiento,estado,fecha_emision,fecha_recepcion
+OC-2026-0001,Agroindustria Arrocera de Sébaco S.A.,INS-001,30.000,45.00,LPR-ARR-2601,2027-03-04,Recibida,2026-10-30,2026-10-30
+OC-2026-0001,Agroindustria Arrocera de Sébaco S.A.,INS-004,34.875,40.00,LPR-AZU-2601,2027-05-03,Recibida,2026-10-30,2026-10-30
+OC-2026-0002,Distribuidora Alimentaria del Valle S.A.,INS-002,6.000,1125.00,LPR-GEL-2601,2027-04-03,Recibida,2026-10-31,2026-10-31
+OC-2026-0002,Distribuidora Alimentaria del Valle S.A.,INS-003,150.000,1.00,LPR-AGU-2601,2027-01-03,Recibida,2026-10-31,2026-10-31
+OC-2026-0002,Distribuidora Alimentaria del Valle S.A.,INS-006,10.000,135.00,LPR-LCO-2601,2027-02-02,Recibida,2026-10-31,2026-10-31
+OC-2026-0002,Distribuidora Alimentaria del Valle S.A.,INS-007,4.688,320.00,LPR-VAI-2601,2027-05-03,Recibida,2026-10-31,2026-10-31
+OC-2026-0003,Frutas Selectas de la Montaña,INS-005,8.000,150.00,LPR-FRU-2601,2026-11-16,Recibida,2026-11-01,2026-11-01
+OC-2026-0004,Empaques Térmicos BioPack,INS-008,250.000,8.00,LPR-VAS-2601,2027-11-04,Recibida,2026-11-02,2026-11-02
+OC-2026-0004,Empaques Térmicos BioPack,INS-009,300.000,1.50,LPR-ETI-2601,2027-11-04,Recibida,2026-11-02,2026-11-02
+OC-2026-0004,Empaques Térmicos BioPack,INS-010,70.833,6.00,LPR-BAN-2601,2027-11-04,Recibida,2026-11-02,2026-11-02

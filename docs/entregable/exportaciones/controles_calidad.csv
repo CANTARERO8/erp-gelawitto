@@ -1,0 +1,7 @@
+codigo_control,codigo_lote,unidades_inspeccionadas,unidades_no_conformes,disposicion,costo_perdido,defecto
+CC-2026-001,LOT-2026-001,20.000,0.000,Liberación,0.00,
+CC-2026-002,LOT-2026-002,30.000,0.000,Liberación,0.00,
+CC-2026-003,LOT-2026-003,35.000,0.000,Liberación,0.00,
+CC-2026-004,LOT-2026-004,36.000,0.000,Liberación,0.00,
+CC-2026-005,LOT-2026-005,25.000,0.000,Liberación,0.00,
+CC-2026-006,LOT-2026-006,10.000,1.000,Scrap,21.50,Gelificación incompleta en 1 vaso tras excursión térmica a 8.90 °C en REF-01
