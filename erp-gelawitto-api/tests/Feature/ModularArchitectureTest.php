@@ -258,7 +258,7 @@ class ModularArchitectureTest extends TestCase
     {
         CajaTurno::where('estado', 'Abierta')->update(['estado' => 'Cerrada', 'fecha_cierre' => now()]);
 
-        $producto = Producto::where('stock_actual', '>', 5)->firstOrFail();
+        $producto = Producto::where('tipo', 'terminado')->where('stock_actual', '>', 5)->orderBy('id')->firstOrFail();
         $cliente = Cliente::firstOrFail();
 
         $noShiftResponse = $this->actingAs($this->adminUser)->post('/ventas', [

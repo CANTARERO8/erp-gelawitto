@@ -200,7 +200,7 @@ class ErpCompletoTest extends TestCase
             ->assertOk();
 
         $clienteMayorista = Cliente::where('tipo', 'Mayorista')->firstOrFail();
-        $productos = Producto::where('stock_actual', '>=', 5)->take(2)->get();
+        $productos = Producto::where('tipo', 'terminado')->where('stock_actual', '>=', 5)->orderBy('id')->take(2)->get();
 
         $turno = CajaTurno::where('estado', 'Abierta')->firstOrFail();
         $efectivoAntes = (float) $turno->ventas_efectivo;
