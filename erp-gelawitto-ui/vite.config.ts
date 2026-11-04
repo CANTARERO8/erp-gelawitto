@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
 
     return {
         plugins: [
-            vue(),
+            vue({ template: { transformAssetUrls: { includeAbsolute: false } } }),
             tailwindcss(),
         ],
         resolve: {
