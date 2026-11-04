@@ -13,6 +13,7 @@ const props = defineProps<{
         fecha_emision: string;
         estado: string;
         total: string;
+        lote_proveedor?: string;
         notas: string;
     }>;
     proveedores: Array<{ id: number; nombre: string }>;
@@ -39,6 +40,8 @@ const form = useFormulario({
             insumo_id: props.insumos[0]?.id ?? 1,
             cantidad: '20',
             costo_unitario: props.insumos[0]?.costo_promedio ?? '120.00',
+            lote_proveedor: '',
+            fecha_vencimiento: '',
         },
     ],
 });
@@ -52,6 +55,8 @@ function agregarLinea() {
         insumo_id: insumoDefault?.id ?? 1,
         cantidad: '10',
         costo_unitario: insumoDefault?.costo_promedio ?? '100.00',
+        lote_proveedor: '',
+        fecha_vencimiento: '',
     });
 }
 
@@ -91,6 +96,8 @@ function crearOrden() {
                     insumo_id: props.insumos[0]?.id ?? 1,
                     cantidad: '20',
                     costo_unitario: props.insumos[0]?.costo_promedio ?? '120.00',
+                    lote_proveedor: '',
+                    fecha_vencimiento: '',
                 },
             ];
         },
@@ -198,6 +205,26 @@ async function recibirOrden(oc: { id: number }) {
                                     />
                                 </div>
                             </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-muted-foreground mb-0.5">Lote Proveedor</label>
+                                    <input
+                                        v-model="linea.lote_proveedor"
+                                        type="text"
+                                        placeholder="Ej. LPR-ARR-2602"
+                                        class="w-full h-9 px-2.5 rounded-md border border-input bg-surface text-xs"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-muted-foreground mb-0.5">Vencimiento (FEFO)</label>
+                                    <input
+                                        v-model="linea.fecha_vencimiento"
+                                        type="date"
+                                        class="w-full h-9 px-2.5 rounded-md border border-input bg-surface text-xs"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -257,6 +284,7 @@ async function recibirOrden(oc: { id: number }) {
                                 <th class="py-3 px-4 font-semibold">Folio</th>
                                 <th class="py-3 px-4 font-semibold">Fecha</th>
                                 <th class="py-3 px-4 font-semibold">Proveedor</th>
+                                <th class="py-3 px-4 font-semibold">Lote Proveedor</th>
                                 <th class="py-3 px-4 font-semibold">Estado</th>
                                 <th class="py-3 px-4 font-semibold text-right">Importe Total</th>
                                 <th class="py-3 px-4 font-semibold">Responsable</th>
@@ -270,6 +298,9 @@ async function recibirOrden(oc: { id: number }) {
                                 <td class="py-3 px-4">
                                     <p class="font-semibold text-foreground">{{ oc.proveedor_nombre }}</p>
                                     <p class="text-xs text-muted-foreground">{{ oc.notas }}</p>
+                                </td>
+                                <td class="py-3 px-4 font-mono text-xs text-foreground">
+                                    {{ oc.lote_proveedor || 'Asignado al recibir' }}
                                 </td>
                                 <td class="py-3 px-4">
                                     <span

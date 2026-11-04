@@ -8,6 +8,7 @@ const props = defineProps<{
         id: number;
         sku: string;
         nombre: string;
+        tipo?: string;
         sabor: string;
         presentacion: string;
         precio_venta: string;
@@ -53,20 +54,21 @@ const activeTab = ref<'productos' | 'insumos' | 'proveedores' | 'clientes'>('pro
 const formProducto = useFormulario({
     sku: '',
     nombre: '',
-    sabor: 'Fresa',
-    presentacion: 'Tina 1 Litro',
-    precio_venta: '530.00',
-    costo_unitario: '195.00',
-    stock_minimo: '8',
+    tipo: 'terminado',
+    sabor: 'Arroz Tradicional',
+    presentacion: 'Vaso 100 mL',
+    precio_venta: '100.00',
+    costo_unitario: '20.77',
+    stock_minimo: '10',
 });
 
 const formInsumo = useFormulario({
     codigo: '',
     nombre: '',
-    categoria: 'Lácteos',
+    categoria: 'Cereales y Harinas',
     unidad_id: props.unidades[0]?.id ?? 1,
-    stock_minimo: '15',
-    costo_promedio: '65.00',
+    stock_minimo: '10',
+    costo_promedio: '45.00',
 });
 
 const formProveedor = useFormulario({
@@ -171,27 +173,39 @@ function guardarCliente() {
         <!-- Pestaña Productos Terminados -->
         <div v-if="activeTab === 'productos'" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <section class="lg:col-span-4 rounded-lg bg-surface border border-border p-5 h-fit">
-                <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Registrar Nuevo Producto</h2>
-                <p class="text-xs text-muted-foreground mb-4">Agrega una presentación de helado al catálogo maestro</p>
+                <h2 class="text-base font-titulo font-semibold text-foreground mb-1">Registrar Nuevo Producto o Subensamble</h2>
+                <p class="text-xs text-muted-foreground mb-4">Agrega un producto terminado o subensamble intermedio al catálogo maestro</p>
 
                 <form @submit.prevent="guardarProducto" class="space-y-3.5">
-                    <div>
-                        <label class="block text-xs font-semibold mb-1">Código SKU</label>
-                        <input
-                            v-model="formProducto.sku"
-                            type="text"
-                            placeholder="GEL-MAN-1L"
-                            required
-                            class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-                        />
-                        <p v-if="formProducto.errors.sku" class="text-xs text-estado-rojo-texto mt-1">{{ formProducto.errors.sku }}</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Código SKU</label>
+                            <input
+                                v-model="formProducto.sku"
+                                type="text"
+                                placeholder="GLW-MAR-100"
+                                required
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            />
+                            <p v-if="formProducto.errors.sku" class="text-xs text-estado-rojo-texto mt-1">{{ formProducto.errors.sku }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Nivel / Tipo</label>
+                            <select
+                                v-model="formProducto.tipo"
+                                class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                            >
+                                <option value="terminado">Terminado (Nivel 0)</option>
+                                <option value="semielaborado">Subensamble (Nivel 1)</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold mb-1">Nombre Comercial</label>
                         <input
                             v-model="formProducto.nombre"
                             type="text"
-                            placeholder="Gelato Artesanal de Mango Real"
+                            placeholder="Gelawitto de Maracuyá y Arroz"
                             required
                             class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
                         />
@@ -275,7 +289,15 @@ function guardarCliente() {
                             <tr v-for="p in productos" :key="p.id" class="hover:bg-muted/25">
                                 <td class="py-3 px-4 font-mono text-xs text-frambuesa font-semibold">{{ p.sku }}</td>
                                 <td class="py-3 px-4">
-                                    <p class="font-semibold text-foreground">{{ p.nombre }}</p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-semibold text-foreground">{{ p.nombre }}</p>
+                                        <span
+                                            class="px-2 py-0.5 rounded text-[11px] font-semibold"
+                                            :class="p.tipo === 'semielaborado' ? 'bg-amber-100 text-amber-800' : 'bg-estado-verde text-estado-verde-texto'"
+                                        >
+                                            {{ p.tipo === 'semielaborado' ? 'Subensamble' : 'Terminado' }}
+                                        </span>
+                                    </div>
                                     <p class="text-xs text-muted-foreground">{{ p.presentacion }}</p>
                                 </td>
                                 <td class="py-3 px-4 text-xs font-medium">{{ p.sabor }}</td>
@@ -324,12 +346,14 @@ function guardarCliente() {
                                 v-model="formInsumo.categoria"
                                 class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
                             >
-                                <option value="Lácteos">Lácteos</option>
-                                <option value="Frutas">Frutas</option>
+                                <option value="Cereales y Harinas">Cereales y Harinas</option>
+                                <option value="Hidrocoloides">Hidrocoloides</option>
+                                <option value="Aguas y Líquidos">Aguas y Líquidos</option>
                                 <option value="Endulzantes">Endulzantes</option>
+                                <option value="Frutas">Frutas</option>
+                                <option value="Lácteos">Lácteos</option>
+                                <option value="Aromas y Esencias">Aromas y Esencias</option>
                                 <option value="Empaques">Empaques</option>
-                                <option value="Frutos Secos">Frutos Secos</option>
-                                <option value="Gelatinas">Gelatinas</option>
                             </select>
                         </div>
                         <div>

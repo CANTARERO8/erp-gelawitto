@@ -10,9 +10,12 @@ const props = defineProps<{
         producto_nombre: string;
         estado: string;
         estado_calidad: string;
+        fecha_vencimiento?: string | null;
         cantidad_programada: string;
         cantidad_obtenida: string | null;
-        insumos: Array<{ nombre: string; cantidad: string }>;
+        cantidad_disponible?: string | null;
+        insumos: Array<{ nombre: string; cantidad: string; lote_origen?: string }>;
+        ventas_clientes?: Array<{ folio: string; cliente: string; cantidad: string; fecha: string }>;
         controles: Array<{
             codigo_control: string;
             fecha: string;
@@ -204,10 +207,11 @@ function claseDisposicion(disposicion: string): string {
                     <table class="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr class="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
-                                <th class="py-3 px-4 font-semibold">Lote</th>
-                                <th class="py-3 px-4 font-semibold">Insumos consumidos</th>
-                                <th class="py-3 px-4 font-semibold text-right">Obtenido</th>
+                                <th class="py-3 px-4 font-semibold">Lote y Vencimiento</th>
+                                <th class="py-3 px-4 font-semibold">Insumos y Lote Origen (FEFO)</th>
+                                <th class="py-3 px-4 font-semibold text-right">Obtenido / Disp.</th>
                                 <th class="py-3 px-4 font-semibold">Calidad</th>
+                                <th class="py-3 px-4 font-semibold">Ventas y Clientes (FEFO)</th>
                                 <th class="py-3 px-4 font-semibold">Inspecciones</th>
                             </tr>
                         </thead>
@@ -216,26 +220,40 @@ function claseDisposicion(disposicion: string): string {
                                 <td class="py-3 px-4">
                                     <p class="font-mono text-xs font-semibold text-frambuesa">{{ l.codigo_lote }}</p>
                                     <p class="text-xs text-muted-foreground">{{ l.producto_nombre }}</p>
-                                    <p class="text-xs text-muted-foreground">{{ l.estado }}</p>
+                                    <p v-if="l.fecha_vencimiento" class="text-[11px] text-muted-foreground">Vence: {{ l.fecha_vencimiento }}</p>
                                 </td>
-                                <td class="py-3 px-4 text-xs">
+                                <td class="py-3 px-4 text-xs space-y-1">
                                     <p v-if="l.insumos.length === 0" class="text-muted-foreground">Sin consumos registrados</p>
-                                    <p v-for="(i, idx) in l.insumos" :key="idx">
-                                        {{ i.nombre }}: <span class="font-semibold">{{ Number(i.cantidad).toFixed(3) }}</span>
-                                    </p>
+                                    <div v-for="(i, idx) in l.insumos" :key="idx">
+                                        <span>{{ i.nombre }}: <strong class="font-semibold">{{ Number(i.cantidad).toFixed(3) }}</strong></span>
+                                        <span v-if="i.lote_origen" class="ml-1.5 font-mono text-[11px] text-frambuesa">
+                                            ({{ i.lote_origen }})
+                                        </span>
+                                    </div>
                                 </td>
-                                <td class="py-3 px-4 text-right font-semibold">
-                                    {{ l.cantidad_obtenida !== null ? Number(l.cantidad_obtenida).toFixed(1) : '—' }}
+                                <td class="py-3 px-4 text-right font-semibold text-xs">
+                                    <p>{{ l.cantidad_obtenida !== null ? Number(l.cantidad_obtenida).toFixed(1) : '—' }}</p>
+                                    <p v-if="l.cantidad_disponible !== null && l.cantidad_disponible !== undefined" class="text-[11px] text-muted-foreground font-normal">
+                                        Disp: {{ Number(l.cantidad_disponible).toFixed(1) }}
+                                    </p>
                                 </td>
                                 <td class="py-3 px-4">
                                     <span :class="['px-2.5 py-0.5 rounded text-xs font-semibold', claseEstadoCalidad(l.estado_calidad)]">
                                         {{ l.estado_calidad }}
                                     </span>
                                 </td>
+                                <td class="py-3 px-4 text-xs space-y-1">
+                                    <p v-if="!l.ventas_clientes || l.ventas_clientes.length === 0" class="text-muted-foreground">En almacén</p>
+                                    <div v-for="(vc, vIdx) in l.ventas_clientes" :key="vIdx">
+                                        <span class="font-mono font-semibold text-frambuesa">{{ vc.folio }}</span>
+                                        <span class="text-foreground"> {{ vc.cliente }}</span>
+                                        <span class="text-muted-foreground"> ({{ Number(vc.cantidad).toFixed(0) }} uds)</span>
+                                    </div>
+                                </td>
                                 <td class="py-3 px-4 text-xs">
                                     <p v-if="l.controles.length === 0" class="text-muted-foreground">Sin inspección</p>
                                     <div v-for="c in l.controles" :key="c.codigo_control" class="mb-2 last:mb-0">
-                                        <p class="font-mono font-semibold">{{ c.codigo_control }} · {{ c.fecha }}</p>
+                                        <p class="font-mono font-semibold">{{ c.codigo_control }} ({{ c.fecha }})</p>
                                         <p>
                                             {{ c.unidades_no_conformes }} no conformes de {{ c.unidades_inspeccionadas }}
                                             <span :class="['ml-1 px-2 py-0.5 rounded font-semibold', claseDisposicion(c.disposicion)]">
@@ -260,7 +278,7 @@ function claseDisposicion(disposicion: string): string {
             <div class="px-5 py-4 border-b border-border">
                 <h2 class="text-base font-titulo font-semibold text-foreground">Temperatura del Refrigerador</h2>
                 <p class="text-xs text-muted-foreground">
-                    Dispositivo {{ rango.dispositivo }} · rango aceptable de {{ rango.minimo }} a {{ rango.maximo }} °C.
+                    Dispositivo {{ rango.dispositivo }} con rango aceptable de {{ rango.minimo }} a {{ rango.maximo }} °C.
                     Una lectura fuera de rango retiene los lotes que esperan inspección.
                 </p>
             </div>

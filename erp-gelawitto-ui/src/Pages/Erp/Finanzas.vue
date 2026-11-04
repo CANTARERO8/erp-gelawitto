@@ -382,7 +382,7 @@ function liquidar(id: number) {
 
                     <div class="space-y-2 text-sm pt-2">
                         <div class="flex justify-between py-1.5 border-b border-border">
-                            <span>(+) Ingresos por Ventas de Helados (4101)</span>
+                            <span>(+) Ingresos por Ventas Comerciales (4101)</span>
                             <span class="font-semibold">
                                 C$ {{ Number(props.contabilidad?.estado_resultados.ingresos_ventas ?? 0).toFixed(2) }}
                             </span>

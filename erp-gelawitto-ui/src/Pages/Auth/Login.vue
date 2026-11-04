@@ -3,11 +3,12 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Eye, EyeOff, Sun, Moon } from 'lucide-vue-next';
 import { useFormulario } from '@/composables/useFormulario';
-import { establecerSesion } from '@/composables/useAuth';
+import { aplicarTemaDom, establecerSesion, guardarPreferencia } from '@/composables/useAuth';
 
 const props = defineProps<{
     failedAttempts?: number;
     lockoutSeconds?: number;
+    parametros?: Record<string, string>;
 }>();
 
 const router = useRouter();
@@ -38,7 +39,12 @@ const buttonLabel = computed(() => {
 });
 
 onMounted(() => {
-    isDark.value = document.documentElement.classList.contains('dark');
+    if (props.parametros?.ui_tema) {
+        isDark.value = props.parametros.ui_tema === 'dark';
+        aplicarTemaDom(props.parametros.ui_tema);
+    } else {
+        isDark.value = document.documentElement.classList.contains('dark');
+    }
     if (lockoutTimer.value > 0) {
         startCountdown();
     }
@@ -66,8 +72,7 @@ function startCountdown() {
 
 function toggleTheme() {
     isDark.value = !isDark.value;
-    document.documentElement.classList.toggle('dark', isDark.value);
-    localStorage.setItem('gelawitto-theme', isDark.value ? 'dark' : 'light');
+    guardarPreferencia('ui_tema', isDark.value ? 'dark' : 'light');
 }
 
 function submitLogin() {
@@ -115,7 +120,7 @@ function submitLogin() {
                     <!-- Pie editorial sobre la fotografía -->
                     <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-8 text-white">
                         <h2 class="text-2xl font-titulo font-semibold max-w-2xl">
-                            Trazabilidad de insumos lácteos, fruta fresca, lotes de mantecación y punto de venta.
+                            Trazabilidad FEFO de insumos, cocción coloidal de arroz, cámara fría IIoT y punto de venta.
                         </h2>
                     </div>
                 </div>
@@ -257,7 +262,7 @@ function submitLogin() {
 
             <!-- Pie de columna -->
             <div class="text-center text-xs text-muted-foreground">
-                Gelawitto Heladería
+                Postres Funcionales Gelawitto
             </div>
         </div>
     </div>

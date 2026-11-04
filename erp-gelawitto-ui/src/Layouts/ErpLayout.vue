@@ -28,10 +28,10 @@ defineProps<{
 
 const route = useRoute();
 const vueRouter = useRouter();
-const { usuario: user, modulos, mensajeExito, mensajeError, limpiarSesion } = useAuth();
+const { usuario: user, modulos, parametros, mensajeExito, mensajeError, limpiarSesion, guardarPreferencia, aplicarTemaDom } = useAuth();
 
-const isCollapsed = ref(false);
-const isDark = ref(false);
+const isCollapsed = ref(parametros.value.ui_sidebar_colapsado === 'true');
+const isDark = ref(parametros.value.ui_tema === 'dark');
 const toastVisible = ref(false);
 const toastMessage = ref('');
 const toastVariant = ref<'success' | 'error'>('success');
@@ -58,10 +58,14 @@ const navItems = computed(() =>
 );
 
 onMounted(() => {
-    isDark.value = document.documentElement.classList.contains('dark');
-    const savedCollapse = localStorage.getItem('gelawitto-sidebar-collapsed');
-    if (savedCollapse === 'true') {
-        isCollapsed.value = true;
+    if (parametros.value.ui_tema) {
+        isDark.value = parametros.value.ui_tema === 'dark';
+        aplicarTemaDom(parametros.value.ui_tema);
+    } else {
+        isDark.value = document.documentElement.classList.contains('dark');
+    }
+    if (parametros.value.ui_sidebar_colapsado) {
+        isCollapsed.value = parametros.value.ui_sidebar_colapsado === 'true';
     }
 });
 
@@ -85,13 +89,12 @@ watch(
 
 function toggleTheme() {
     isDark.value = !isDark.value;
-    document.documentElement.classList.toggle('dark', isDark.value);
-    localStorage.setItem('gelawitto-theme', isDark.value ? 'dark' : 'light');
+    guardarPreferencia('ui_tema', isDark.value ? 'dark' : 'light');
 }
 
 function toggleSidebar() {
     isCollapsed.value = !isCollapsed.value;
-    localStorage.setItem('gelawitto-sidebar-collapsed', String(isCollapsed.value));
+    guardarPreferencia('ui_sidebar_colapsado', String(isCollapsed.value));
 }
 
 function isActive(match: string): boolean {

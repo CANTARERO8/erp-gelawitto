@@ -62,6 +62,12 @@ export function notificarError(mensaje: string | null) {
     }
 }
 
+export function aplicarTemaDom(tema?: string) {
+    if (typeof document !== 'undefined') {
+        document.documentElement.classList.toggle('dark', tema === 'dark');
+    }
+}
+
 export function establecerSesion(datos: {
     user: UsuarioAutenticado | null;
     modulos?: ModuloMenu[];
@@ -69,8 +75,24 @@ export function establecerSesion(datos: {
 }) {
     estado.usuario = datos.user;
     estado.modulos = datos.modulos ?? [];
-    estado.parametros = datos.parametros ?? {};
+    estado.parametros = { ...estado.parametros, ...(datos.parametros ?? {}) };
+    aplicarTemaDom(estado.parametros.ui_tema);
     estado.inicializado = true;
+}
+
+export async function guardarPreferencia(clave: 'ui_tema' | 'ui_sidebar_colapsado', valor: string) {
+    estado.parametros[clave] = valor;
+    if (clave === 'ui_tema') {
+        aplicarTemaDom(valor);
+    }
+    try {
+        const res = await apiService('preferencias').post('', { [clave]: valor });
+        if (res?.parametros) {
+            estado.parametros = { ...estado.parametros, ...res.parametros };
+        }
+    } catch {
+        // En entorno de pruebas sin red mantiene el estado reactivo en memoria
+    }
 }
 
 export function limpiarSesion() {
@@ -106,5 +128,7 @@ export function useAuth() {
         limpiarSesion,
         notificarExito,
         notificarError,
+        guardarPreferencia,
+        aplicarTemaDom,
     };
 }

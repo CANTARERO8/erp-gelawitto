@@ -26,6 +26,7 @@ const props = defineProps<{
         metodo_pago: string;
         total: string;
         estado: string;
+        lotes_fefo?: string;
     }>;
     productos: Array<{
         id: number;
@@ -365,6 +366,7 @@ function cerrarTurno() {
                                     <th class="py-3 px-4 font-semibold">Folio</th>
                                     <th class="py-3 px-4 font-semibold">Fecha</th>
                                     <th class="py-3 px-4 font-semibold">Cliente</th>
+                                    <th class="py-3 px-4 font-semibold">Lotes FEFO</th>
                                     <th class="py-3 px-4 font-semibold">Método</th>
                                     <th class="py-3 px-4 font-semibold text-right">Total</th>
                                     <th class="py-3 px-4 font-semibold">Cajero</th>
@@ -375,6 +377,7 @@ function cerrarTurno() {
                                     <td class="py-3 px-4 font-mono text-xs font-semibold text-frambuesa">{{ v.folio }}</td>
                                     <td class="py-3 px-4 text-xs">{{ String(v.fecha_venta).slice(0, 16) }}</td>
                                     <td class="py-3 px-4 font-medium text-foreground">{{ v.cliente_nombre }}</td>
+                                    <td class="py-3 px-4 font-mono text-xs text-foreground">{{ v.lotes_fefo || '—' }}</td>
                                     <td class="py-3 px-4 text-xs font-semibold">{{ v.metodo_pago }}</td>
                                     <td class="py-3 px-4 text-right font-semibold">C$ {{ Number(v.total).toFixed(2) }}</td>
                                     <td class="py-3 px-4 text-xs text-muted-foreground">{{ v.vendedor_nombre }}</td>

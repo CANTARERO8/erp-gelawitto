@@ -85,7 +85,7 @@ function registrarAjuste() {
                             class="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
                         >
                             <option value="insumo">Materia Prima e Insumos</option>
-                            <option value="producto">Producto Terminado (Helados)</option>
+                            <option value="producto">Producto Terminado y Subensamble</option>
                         </select>
                     </div>
 
