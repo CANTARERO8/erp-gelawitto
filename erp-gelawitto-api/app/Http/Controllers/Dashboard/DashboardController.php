@@ -9,6 +9,7 @@ use App\Repositories\Finanzas\FinanzasRepository;
 use App\Repositories\Inventario\InventarioRepository;
 use App\Repositories\Ventas\VentasRepository;
 use App\Services\Dashboard\DashboardService;
+use App\Services\Produccion\ProduccionService;
 use Illuminate\Http\JsonResponse;
 
 class DashboardController extends Controller
@@ -18,8 +19,11 @@ class DashboardController extends Controller
         protected InventarioRepository $inventarioRepository,
         protected FinanzasRepository $finanzasRepository,
         protected CatalogosRepository $catalogosRepository,
-        protected DashboardService $dashboardService
-    ) {}
+        protected DashboardService $dashboardService,
+        protected ?ProduccionService $produccionService = null
+    ) {
+        $this->produccionService ??= app(ProduccionService::class);
+    }
 
     public function index(): JsonResponse
     {
@@ -42,23 +46,25 @@ class DashboardController extends Controller
 
         $ultimosMovimientos = KardexResource::collection($this->inventarioRepository->getUltimosMovimientos(6))->resolve();
 
-        $productosRentabilidad = $this->catalogosRepository->getProductos()->map(function ($producto) {
-            $precio = (float) $producto->precio_venta;
-            $costo = (float) $producto->costo_unitario;
-            $margen = $precio > 0 ? round((($precio - $costo) / $precio) * 100, 1) : 0;
+        $productosRentabilidad = $this->catalogosRepository->getProductos()
+            ->filter(fn ($p) => ($p->tipo ?? 'terminado') === 'terminado')
+            ->map(function ($producto) {
+                $precio = (float) $producto->precio_venta;
+                $costo = (float) $producto->costo_unitario;
+                $margen = $precio > 0 ? round((($precio - $costo) / $precio) * 100, 1) : 0;
 
-            return [
-                'id' => $producto->id,
-                'sku' => $producto->sku,
-                'nombre' => $producto->nombre,
-                'sabor' => $producto->sabor,
-                'presentacion' => $producto->presentacion,
-                'precio_venta' => (string) $producto->precio_venta,
-                'costo_unitario' => (string) $producto->costo_unitario,
-                'stock_actual' => (string) $producto->stock_actual,
-                'margen_porcentaje' => (string) $margen,
-            ];
-        })->sortByDesc('stock_actual')->values();
+                return [
+                    'id' => $producto->id,
+                    'sku' => $producto->sku,
+                    'nombre' => $producto->nombre,
+                    'sabor' => $producto->sabor,
+                    'presentacion' => $producto->presentacion,
+                    'precio_venta' => (string) $producto->precio_venta,
+                    'costo_unitario' => (string) $producto->costo_unitario,
+                    'stock_actual' => (string) $producto->stock_actual,
+                    'margen_porcentaje' => (string) $margen,
+                ];
+            })->sortByDesc('stock_actual')->values();
 
         return response()->json([
             'kpis' => [
@@ -74,6 +80,7 @@ class DashboardController extends Controller
             'productosRentabilidad' => $productosRentabilidad,
             'analisisRentabilidad' => $this->dashboardService->getAnalisisRentabilidad(),
             'analisisCompras' => $this->dashboardService->getAnalisisCompras(),
+            'oee' => $this->produccionService->calcularMetricasOee(),
         ]);
     }
 }

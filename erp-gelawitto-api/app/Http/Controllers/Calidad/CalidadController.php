@@ -26,17 +26,41 @@ class CalidadController extends Controller
         $consumos = $this->calidadRepository->getConsumosPorLote($lotes->pluck('codigo_lote')->all());
 
         $trazabilidad = $lotes->map(function (LoteProduccion $lote) use ($consumos) {
+            $lotesOrigenPorItem = [];
+            foreach ($lote->consumos as $c) {
+                if ($c->loteInsumo && $c->loteInsumo->insumo) {
+                    $nombreItem = $c->loteInsumo->insumo->nombre;
+                    $lotesOrigenPorItem[$nombreItem][] = $c->loteInsumo->lote_proveedor ?: $c->loteInsumo->codigo_lote_insumo;
+                } elseif ($c->subproductoLote && $c->subproductoLote->producto) {
+                    $nombreItem = $c->subproductoLote->producto->nombre;
+                    $lotesOrigenPorItem[$nombreItem][] = $c->subproductoLote->codigo_lote;
+                }
+            }
+
             return [
                 'id' => $lote->id,
                 'codigo_lote' => $lote->codigo_lote,
                 'producto_nombre' => $lote->producto?->nombre ?? '',
                 'estado' => $lote->estado,
                 'estado_calidad' => $lote->estado_calidad,
+                'fecha_vencimiento' => is_string($lote->fecha_vencimiento) ? $lote->fecha_vencimiento : $lote->fecha_vencimiento?->toDateString(),
                 'cantidad_programada' => (string) $lote->cantidad_programada,
                 'cantidad_obtenida' => $lote->cantidad_obtenida !== null ? (string) $lote->cantidad_obtenida : null,
-                'insumos' => ($consumos->get($lote->codigo_lote) ?? collect())->map(fn ($m) => [
-                    'nombre' => $m->nombre_item,
-                    'cantidad' => (string) abs((float) $m->cantidad),
+                'cantidad_disponible' => $lote->cantidad_disponible !== null ? (string) $lote->cantidad_disponible : null,
+                'insumos' => ($consumos->get($lote->codigo_lote) ?? collect())->map(function ($m) use ($lotesOrigenPorItem) {
+                    $lotesItem = array_values(array_unique($lotesOrigenPorItem[$m->nombre_item] ?? []));
+
+                    return [
+                        'nombre' => $m->nombre_item,
+                        'cantidad' => (string) abs((float) $m->cantidad),
+                        'lote_origen' => implode(', ', $lotesItem),
+                    ];
+                })->values()->all(),
+                'ventas_clientes' => $lote->ventaLineas->map(fn ($vl) => [
+                    'folio' => $vl->venta?->folio ?? '',
+                    'cliente' => $vl->venta?->cliente?->nombre ?? 'Cliente de Mostrador',
+                    'cantidad' => (string) $vl->cantidad,
+                    'fecha' => is_string($vl->venta?->fecha_venta) ? $vl->venta->fecha_venta : $vl->venta?->fecha_venta?->format('Y-m-d H:i'),
                 ])->values()->all(),
                 'controles' => $lote->controles->map(fn ($c) => [
                     'codigo_control' => $c->codigo_control,

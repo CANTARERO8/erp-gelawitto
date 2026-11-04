@@ -16,9 +16,10 @@ class StoreProductoRequest extends FormRequest
         return [
             'sku' => ['required', 'string', 'max:30', 'unique:productos,sku'],
             'nombre' => ['required', 'string', 'max:120'],
+            'tipo' => ['nullable', 'string', 'in:terminado,semielaborado'],
             'sabor' => ['required', 'string', 'max:60'],
             'presentacion' => ['required', 'string', 'max:60'],
-            'precio_venta' => ['required', 'numeric', 'min:0.01'],
+            'precio_venta' => ['required', 'numeric', 'min:0'],
             'costo_unitario' => ['required', 'numeric', 'min:0'],
             'stock_minimo' => ['required', 'numeric', 'min:0'],
         ];

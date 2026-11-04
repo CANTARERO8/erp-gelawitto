@@ -23,13 +23,14 @@ class DashboardRepository
     {
         return DB::select("
             select r.nombre as receta, p.nombre as producto, p.precio_venta::float as precio,
-                   (sum(ri.cantidad_requerida*(1+ri.merma_estimada_porcentaje/100)*i.costo_promedio)
+                   (sum(ri.cantidad_requerida*coalesce(i.costo_promedio, sp.costo_unitario, 0))
                    / nullif(r.rendimiento_unidades,0))::float as costo
             from recetas r
             join productos p on p.id = r.producto_id
             join receta_insumos ri on ri.receta_id = r.id
-            join insumos i on i.id = ri.insumo_id
-            where r.activa
+            left join insumos i on i.id = ri.insumo_id
+            left join productos sp on sp.id = ri.subproducto_id
+            where r.activa and coalesce(p.tipo, 'terminado') = 'terminado'
             group by r.id, p.id order by r.nombre
         ");
     }

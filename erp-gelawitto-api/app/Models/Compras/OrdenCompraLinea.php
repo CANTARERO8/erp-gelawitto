@@ -16,6 +16,8 @@ class OrdenCompraLinea extends Model
         'cantidad',
         'costo_unitario',
         'subtotal',
+        'lote_proveedor',
+        'fecha_vencimiento',
     ];
 
     protected function casts(): array
@@ -24,6 +26,7 @@ class OrdenCompraLinea extends Model
             'cantidad' => 'decimal:3',
             'costo_unitario' => 'decimal:2',
             'subtotal' => 'decimal:2',
+            'fecha_vencimiento' => 'date',
         ];
     }
 

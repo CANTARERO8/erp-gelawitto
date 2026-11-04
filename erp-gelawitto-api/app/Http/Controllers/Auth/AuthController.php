@@ -30,6 +30,35 @@ class AuthController extends Controller
         return response()->json([
             'failedAttempts' => $attempts,
             'lockoutSeconds' => $attempts >= 5 && $lockoutSeconds > 0 ? $lockoutSeconds : 0,
+            'parametros' => $this->parametrosRepository->obtenerTodos(),
+        ]);
+    }
+
+    public function actualizarPreferencias(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'ui_tema' => ['nullable', 'string', 'in:light,dark'],
+            'ui_sidebar_colapsado' => ['nullable', 'string', 'in:true,false'],
+        ]);
+
+        if (isset($datos['ui_tema'])) {
+            $this->parametrosRepository->actualizar(
+                'ui_tema',
+                $datos['ui_tema'],
+                'Preferencia visual de tema del sistema persistida en base de datos (light | dark)'
+            );
+        }
+
+        if (isset($datos['ui_sidebar_colapsado'])) {
+            $this->parametrosRepository->actualizar(
+                'ui_sidebar_colapsado',
+                $datos['ui_sidebar_colapsado'],
+                'Estado de barra lateral de navegación persistido en base de datos (true | false)'
+            );
+        }
+
+        return response()->json([
+            'parametros' => $this->parametrosRepository->obtenerTodos(),
         ]);
     }
 

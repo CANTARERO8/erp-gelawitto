@@ -3,6 +3,7 @@
 namespace App\Models\Ventas;
 
 use App\Models\Catalogos\Producto;
+use App\Models\Produccion\LoteProduccion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +14,7 @@ class VentaLinea extends Model
     protected $fillable = [
         'venta_id',
         'producto_id',
+        'lote_produccion_id',
         'cantidad',
         'precio_unitario',
         'costo_unitario',
@@ -37,5 +39,10 @@ class VentaLinea extends Model
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class, 'producto_id');
+    }
+
+    public function loteProduccion(): BelongsTo
+    {
+        return $this->belongsTo(LoteProduccion::class, 'lote_produccion_id');
     }
 }

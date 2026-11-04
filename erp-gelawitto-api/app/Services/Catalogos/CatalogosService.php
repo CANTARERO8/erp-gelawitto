@@ -22,6 +22,7 @@ class CatalogosService
         return DB::transaction(function () use ($data, $actorId, $ip) {
             $producto = $this->catalogosRepository->createProducto([
                 ...$data,
+                'tipo' => $data['tipo'] ?? 'terminado',
                 'stock_actual' => 0,
                 'activo' => true,
             ]);

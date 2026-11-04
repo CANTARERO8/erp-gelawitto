@@ -2,6 +2,7 @@
 
 namespace App\Services\Ventas;
 
+use App\Models\Produccion\LoteProduccion;
 use App\Models\Ventas\CajaTurno;
 use App\Models\Ventas\Venta;
 use App\Repositories\Catalogos\CatalogosRepository;
@@ -63,6 +64,11 @@ class VentasService
                         'producto_id' => 'El producto seleccionado no existe.',
                     ]);
                 }
+                if (($producto->tipo ?? 'terminado') !== 'terminado') {
+                    throw ValidationException::withMessages([
+                        'producto_id' => "El artículo {$producto->nombre} es un subensamble intermedio de producción y no puede venderse directamente.",
+                    ]);
+                }
                 $productosBloqueados[$pid] = $producto;
 
                 $acumuladoSolicitado[$pid] = ($acumuladoSolicitado[$pid] ?? 0.0) + $cant;
@@ -83,13 +89,19 @@ class VentasService
                 $costoTotalVenta += round($cant * (float) $producto->costo_unitario, 2);
                 $nombresResumen[] = "{$producto->nombre} x {$cant}";
 
-                $lineasParaCrear[] = [
-                    'producto_id' => $producto->id,
-                    'cantidad' => $cant,
-                    'precio_unitario' => $producto->precio_venta,
-                    'costo_unitario' => $producto->costo_unitario,
-                    'subtotal' => $subLinea,
-                ];
+                $asignacionesFefo = $this->asignarLotesFefo($producto->id, $cant);
+
+                foreach ($asignacionesFefo as $asig) {
+                    $cantAsig = (float) $asig['cantidad'];
+                    $lineasParaCrear[] = [
+                        'producto_id' => $producto->id,
+                        'lote_produccion_id' => $asig['lote_produccion_id'],
+                        'cantidad' => $cantAsig,
+                        'precio_unitario' => $producto->precio_venta,
+                        'costo_unitario' => $producto->costo_unitario,
+                        'subtotal' => round($cantAsig * (float) $producto->precio_venta, 2),
+                    ];
+                }
             }
 
             $subtotal = round($subtotal, 2);
@@ -263,5 +275,55 @@ class VentasService
 
             return $turno;
         });
+    }
+
+    /**
+     * Asigna unidades vendidas a lotes liberados bajo criterio FEFO (First Expired, First Out).
+     * Si la cantidad supera el disponible del lote más próximo a vencer, parte la asignación en múltiples líneas.
+     */
+    private function asignarLotesFefo(int $productoId, float $cantidadSolicitada): array
+    {
+        $restante = $cantidadSolicitada;
+        $asignaciones = [];
+
+        $lotesLiberados = LoteProduccion::where('producto_id', $productoId)
+            ->where('estado', 'Finalizado')
+            ->whereNotIn('estado_calidad', ['Pendiente', 'Retenido'])
+            ->where('cantidad_disponible', '>', 0)
+            ->orderByRaw('fecha_vencimiento ASC NULLS LAST, id ASC')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($lotesLiberados as $lote) {
+            if ($restante <= 0) {
+                break;
+            }
+
+            $disp = (float) $lote->cantidad_disponible;
+            $tomar = round(min($disp, $restante), 3);
+            if ($tomar <= 0) {
+                continue;
+            }
+
+            $lote->update([
+                'cantidad_disponible' => round($disp - $tomar, 3),
+            ]);
+
+            $asignaciones[] = [
+                'lote_produccion_id' => $lote->id,
+                'cantidad' => $tomar,
+            ];
+
+            $restante = round($restante - $tomar, 3);
+        }
+
+        if ($restante > 0) {
+            $asignaciones[] = [
+                'lote_produccion_id' => null,
+                'cantidad' => $restante,
+            ];
+        }
+
+        return $asignaciones;
     }
 }

@@ -15,6 +15,8 @@ class RecibirCompraRequest extends FormRequest
     {
         return [
             'modalidad_pago' => ['required', 'in:Pagado,Pendiente'],
+            'lote_proveedor' => ['nullable', 'string', 'max:50'],
+            'fecha_vencimiento' => ['nullable', 'date'],
             'notas' => ['nullable', 'string', 'max:255'],
         ];
     }

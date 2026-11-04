@@ -20,6 +20,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::get('/parametros', [AuthController::class, 'parametros'])->name('parametros');
+Route::post('/preferencias', [AuthController::class, 'actualizarPreferencias'])->name('preferencias');
 
 Route::middleware('auth')->group(function () {
     Route::get('/me', [AuthController::class, 'me'])->name('me');
@@ -48,6 +49,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('rol:Producción')->group(function () {
         Route::get('/produccion', [ProduccionController::class, 'index'])->name('produccion');
+        Route::get('/produccion/oee', [ProduccionController::class, 'oee'])->name('produccion.oee');
         Route::post('/produccion/recetas', [ProduccionController::class, 'storeReceta'])->name('produccion.recetas.store');
         Route::post('/produccion/lotes', [ProduccionController::class, 'store'])->name('produccion.lotes.store');
         Route::post('/produccion/lotes/{lote}/ejecutar', [ProduccionController::class, 'ejecutar'])->name('produccion.lotes.ejecutar');

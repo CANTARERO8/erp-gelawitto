@@ -66,6 +66,20 @@ return new class extends Migration
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
+            [
+                'clave' => 'ui_tema',
+                'valor' => 'light',
+                'descripcion' => 'Preferencia visual de tema del sistema persistida en base de datos (light | dark)',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'clave' => 'ui_sidebar_colapsado',
+                'valor' => 'false',
+                'descripcion' => 'Estado de barra lateral de navegación persistido en base de datos (true | false)',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ]);
 
         Schema::create('roles', function (Blueprint $table) {
@@ -100,7 +114,7 @@ return new class extends Migration
         DB::table('roles')->insert($rolesData);
 
         $modulosData = [
-            ['clave' => 'dashboard', 'nombre' => 'Tablero Ejecutivo', 'ruta' => '/dashboard', 'seccion' => 'Principal', 'orden' => 1, 'created_at' => $now, 'updated_at' => $now],
+            ['clave' => 'dashboard', 'nombre' => 'Dashboard', 'ruta' => '/dashboard', 'seccion' => 'Principal', 'orden' => 1, 'created_at' => $now, 'updated_at' => $now],
             ['clave' => 'catalogos', 'nombre' => 'Catálogos Maestros', 'ruta' => '/catalogos', 'seccion' => 'Operaciones', 'orden' => 2, 'created_at' => $now, 'updated_at' => $now],
             ['clave' => 'compras', 'nombre' => 'Compras a Proveedores', 'ruta' => '/compras', 'seccion' => 'Comercial', 'orden' => 3, 'created_at' => $now, 'updated_at' => $now],
             ['clave' => 'inventario', 'nombre' => 'Inventario y Kardex', 'ruta' => '/inventario', 'seccion' => 'Operaciones', 'orden' => 4, 'created_at' => $now, 'updated_at' => $now],

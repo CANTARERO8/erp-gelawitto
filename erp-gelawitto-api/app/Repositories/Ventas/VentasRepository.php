@@ -36,7 +36,7 @@ class VentasRepository
 
     public function getVentasRecientes(int $limit = 25): Collection
     {
-        return Venta::with(['cliente', 'vendedor', 'lineas.producto'])
+        return Venta::with(['cliente', 'vendedor', 'lineas.producto', 'lineas.loteProduccion'])
             ->orderByDesc('id')
             ->limit($limit)
             ->get();
@@ -84,7 +84,7 @@ class VentasRepository
             ]);
         }
 
-        return $venta->load(['cliente', 'vendedor', 'lineas.producto']);
+        return $venta->load(['cliente', 'vendedor', 'lineas.producto', 'lineas.loteProduccion']);
     }
 
     public function createTurno(array $data): CajaTurno

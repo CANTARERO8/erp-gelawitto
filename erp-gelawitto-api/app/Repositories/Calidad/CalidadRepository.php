@@ -12,7 +12,13 @@ class CalidadRepository
 {
     public function getLotesConTrazabilidad(): Collection
     {
-        return LoteProduccion::with(['producto', 'controles.inspector'])
+        return LoteProduccion::with([
+            'producto',
+            'controles.inspector',
+            'consumos.loteInsumo.insumo',
+            'consumos.subproductoLote.producto',
+            'ventaLineas.venta.cliente',
+        ])
             ->orderByDesc('id')
             ->get();
     }

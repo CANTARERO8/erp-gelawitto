@@ -14,7 +14,11 @@ class EjecutarLoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'cantidad_obtenida' => ['required', 'numeric', 'min:0.5'],
+            'cantidad_obtenida' => ['required', 'numeric', 'min:0.1'],
+            'inicio_real' => ['nullable', 'date'],
+            'fin_real' => ['nullable', 'date'],
+            'tiempo_paro_min' => ['nullable', 'numeric', 'min:0'],
+            'fecha_vencimiento' => ['nullable', 'date'],
             'notas' => ['nullable', 'string', 'max:255'],
         ];
     }

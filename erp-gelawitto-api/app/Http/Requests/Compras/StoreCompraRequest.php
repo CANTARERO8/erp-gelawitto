@@ -22,6 +22,8 @@ class StoreCompraRequest extends FormRequest
                 'lineas.*.insumo_id' => ['required', 'exists:insumos,id'],
                 'lineas.*.cantidad' => ['required', 'numeric', 'min:0.001'],
                 'lineas.*.costo_unitario' => ['required', 'numeric', 'min:0.01'],
+                'lineas.*.lote_proveedor' => ['nullable', 'string', 'max:50'],
+                'lineas.*.fecha_vencimiento' => ['nullable', 'date'],
             ];
         }
 
@@ -30,6 +32,8 @@ class StoreCompraRequest extends FormRequest
             'insumo_id' => ['required', 'exists:insumos,id'],
             'cantidad' => ['required', 'numeric', 'min:0.001'],
             'costo_unitario' => ['required', 'numeric', 'min:0.01'],
+            'lote_proveedor' => ['nullable', 'string', 'max:50'],
+            'fecha_vencimiento' => ['nullable', 'date'],
             'aplicar_iva' => ['nullable', 'boolean'],
             'notas' => ['nullable', 'string', 'max:255'],
         ];

@@ -31,7 +31,21 @@ class ProduccionController extends Controller
             'lotes' => LoteResource::collection($this->produccionRepository->getLotes())->resolve(),
             'productos' => ProductoResource::collection($this->catalogosRepository->getProductosActivos())->resolve(),
             'insumos' => InsumoResource::collection($this->catalogosRepository->getInsumosActivos())->resolve(),
+            'centros_trabajo' => $this->produccionRepository->getCentrosTrabajo()->map(fn ($ct) => [
+                'id' => $ct->id,
+                'codigo' => $ct->codigo,
+                'nombre' => $ct->nombre,
+                'estacion' => $ct->estacion,
+                'capacidad_unidades_hora' => (string) $ct->capacidad_unidades_hora,
+                'activo' => (bool) $ct->activo,
+            ])->values()->all(),
+            'oee' => $this->produccionService->calcularMetricasOee(),
         ]);
+    }
+
+    public function oee(): JsonResponse
+    {
+        return response()->json($this->produccionService->calcularMetricasOee());
     }
 
     public function storeReceta(StoreRecetaRequest $request): JsonResponse

@@ -15,6 +15,7 @@ class ProductoResource extends JsonResource
             'nombre' => $this->nombre,
             'sabor' => $this->sabor,
             'presentacion' => $this->presentacion,
+            'tipo' => $this->tipo ?? 'terminado',
             'precio_venta' => (string) $this->precio_venta,
             'costo_unitario' => (string) $this->costo_unitario,
             'stock_actual' => (string) $this->stock_actual,

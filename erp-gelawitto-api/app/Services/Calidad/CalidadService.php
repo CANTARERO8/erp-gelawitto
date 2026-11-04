@@ -140,7 +140,15 @@ class CalidadService
                 'notas' => $data['notas'] ?? null,
             ]);
 
-            $loteBloqueado->update(['estado_calidad' => $estadoCalidad]);
+            $nuevaDisponible = max(
+                0,
+                round((float) ($loteBloqueado->cantidad_disponible ?? $loteBloqueado->cantidad_obtenida) - $noConformes, 3)
+            );
+
+            $loteBloqueado->update([
+                'estado_calidad' => $estadoCalidad,
+                'cantidad_disponible' => $nuevaDisponible,
+            ]);
 
             $this->seguridadService->registrarAuditoria(
                 $actorId,

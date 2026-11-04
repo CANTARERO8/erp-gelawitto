@@ -43,4 +43,9 @@ class Receta extends Model
     {
         return $this->hasMany(LoteProduccion::class, 'receta_id');
     }
+
+    public function rutas(): HasMany
+    {
+        return $this->hasMany(RutaOperacion::class, 'receta_id')->orderBy('secuencia');
+    }
 }

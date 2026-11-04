@@ -2,6 +2,7 @@
 
 namespace App\Services\Compras;
 
+use App\Models\Compras\LoteInsumo;
 use App\Models\Compras\OrdenCompra;
 use App\Repositories\Catalogos\CatalogosRepository;
 use App\Repositories\Compras\ComprasRepository;
@@ -37,6 +38,8 @@ class ComprasService
                 'insumo_id' => $data['insumo_id'],
                 'cantidad' => $data['cantidad'],
                 'costo_unitario' => $data['costo_unitario'],
+                'lote_proveedor' => $data['lote_proveedor'] ?? null,
+                'fecha_vencimiento' => $data['fecha_vencimiento'] ?? null,
             ]];
 
             $lineasPreparadas = [];
@@ -58,6 +61,8 @@ class ComprasService
                     'cantidad' => $item['cantidad'],
                     'costo_unitario' => $item['costo_unitario'],
                     'subtotal' => $subLinea,
+                    'lote_proveedor' => $item['lote_proveedor'] ?? null,
+                    'fecha_vencimiento' => $item['fecha_vencimiento'] ?? null,
                 ];
             }
 
@@ -140,6 +145,27 @@ class ComprasService
                 $insumo->update([
                     'stock_actual' => $nuevoStock,
                     'costo_promedio' => $nuevoCostoPromedio,
+                ]);
+
+                $loteProveedor = $linea->lote_proveedor ?: ($data['lote_proveedor'] ?? ('LPR-'.str_replace('OC-', '', $folio).'-'.$linea->insumo_id));
+                $fechaVencimiento = $linea->fecha_vencimiento
+                    ? (is_string($linea->fecha_vencimiento) ? $linea->fecha_vencimiento : $linea->fecha_vencimiento->toDateString())
+                    : ($data['fecha_vencimiento'] ?? now()->addDays(90)->toDateString());
+
+                $linea->update([
+                    'lote_proveedor' => $loteProveedor,
+                    'fecha_vencimiento' => $fechaVencimiento,
+                ]);
+
+                LoteInsumo::create([
+                    'codigo_lote_insumo' => 'LI-'.str_replace('OC-', '', $folio).'-'.$linea->id,
+                    'insumo_id' => $insumo->id,
+                    'orden_compra_linea_id' => $linea->id,
+                    'lote_proveedor' => $loteProveedor,
+                    'cantidad_inicial' => $cantidad,
+                    'cantidad_disponible' => $cantidad,
+                    'fecha_ingreso' => now()->toDateString(),
+                    'fecha_vencimiento' => $fechaVencimiento,
                 ]);
 
                 $this->inventarioRepository->registrarMovimiento([

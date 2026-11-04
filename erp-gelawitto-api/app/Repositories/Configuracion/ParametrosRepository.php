@@ -40,6 +40,20 @@ class ParametrosRepository
         return round($porcentaje / 100, 4);
     }
 
+    public function actualizar(string $clave, string $valor, ?string $descripcion = null): void
+    {
+        if (! Schema::hasTable('parametros')) {
+            return;
+        }
+
+        $atributos = ['valor' => $valor];
+        if ($descripcion !== null) {
+            $atributos['descripcion'] = $descripcion;
+        }
+
+        Parametro::updateOrCreate(['clave' => $clave], $atributos);
+    }
+
     public static function siguienteFolio(
         string $secuencia,
         string $formato,

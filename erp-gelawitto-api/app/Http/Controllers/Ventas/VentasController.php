@@ -26,21 +26,23 @@ class VentasController extends Controller
     {
         $turnoActivo = $this->ventasRepository->getTurnoActivo();
 
-        $productos = $this->catalogosRepository->getProductosActivos()->map(function ($p) {
-            $enCuarentena = $this->ventasRepository->getStockEnCuarentena($p->id);
-            $disponible = max(0, round((float) $p->stock_actual - $enCuarentena, 3));
+        $productos = $this->catalogosRepository->getProductosActivos()
+            ->filter(fn ($p) => ($p->tipo ?? 'terminado') === 'terminado')
+            ->map(function ($p) {
+                $enCuarentena = $this->ventasRepository->getStockEnCuarentena($p->id);
+                $disponible = max(0, round((float) $p->stock_actual - $enCuarentena, 3));
 
-            return [
-                'id' => $p->id,
-                'sku' => $p->sku,
-                'nombre' => $p->nombre,
-                'presentacion' => $p->presentacion,
-                'precio_venta' => (string) $p->precio_venta,
-                'stock_actual' => (string) $p->stock_actual,
-                'stock_en_cuarentena' => (string) $enCuarentena,
-                'stock_disponible' => (string) $disponible,
-            ];
-        })->values();
+                return [
+                    'id' => $p->id,
+                    'sku' => $p->sku,
+                    'nombre' => $p->nombre,
+                    'presentacion' => $p->presentacion,
+                    'precio_venta' => (string) $p->precio_venta,
+                    'stock_actual' => (string) $p->stock_actual,
+                    'stock_en_cuarentena' => (string) $enCuarentena,
+                    'stock_disponible' => (string) $disponible,
+                ];
+            })->values();
 
         $clientes = $this->catalogosRepository->getClientesActivos()->map(function ($c) {
             return [

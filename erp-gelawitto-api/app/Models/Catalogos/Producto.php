@@ -17,6 +17,7 @@ class Producto extends Model
         'nombre',
         'sabor',
         'presentacion',
+        'tipo',
         'precio_venta',
         'costo_unitario',
         'stock_actual',
