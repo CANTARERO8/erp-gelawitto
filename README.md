@@ -2,9 +2,9 @@
 
 Sistema integral de planificación de recursos empresariales para la heladería artesanal Gelawitto, diseñado para administrar catálogos maestros, compras a proveedores, inventario con libro de Kardex inmutable, formulación técnica y lotes de producción, punto de venta con control de turnos de caja, finanzas operativas con contabilidad de partida doble y auditoría de seguridad.
 
-Construido bajo una arquitectura empresarial desacoplada en dos aplicaciones independientes: **`erp-gelawitto-api`** (Backend REST API en Laravel 11 con PostgreSQL 16) y **`erp-gelawitto-ui`** (Frontend SPA en Vue 3, Vite, Vue Router 4 y Tailwind CSS v4), siguiendo el estándar de Carnes San Martín (`SM_LOG_API` y `SM_LOG_UI`).
+Construido bajo una arquitectura empresarial desacoplada en dos aplicaciones independientes: **`erp-gelawitto-api`** (Backend REST API en Laravel 13 con PostgreSQL 16) y **`erp-gelawitto-ui`** (Frontend SPA en Vue 3, Vite, Vue Router 4 y Tailwind CSS v4), siguiendo el estándar de Carnes San Martín (`SM_LOG_API` y `SM_LOG_UI`).
 
-> **Acceso al Sistema (`http://localhost:5174` | Contraseña general: `password123`)**  
+> **Acceso al Sistema (`http://localhost:5174`)** — la contraseña inicial de las cuentas de prueba está en `erp-gelawitto-api/database/seeders/DatabaseSeeder.php`; cámbiala antes de cualquier uso fuera del laboratorio.  
 > **Administrador:** `admin@gelawitto.com`  
 > **Producción:** `produccion@gelawitto.com`  
 > **Caja (POS):** `caja@gelawitto.com`  
@@ -31,7 +31,7 @@ Instrucciones directas paso a paso para clonar, configurar y ejecutar Gelawitto 
 ### 1. Herramientas requeridas
 
 1. **Git:** Para descargar y sincronizar el código.
-2. **PHP 8.3 o superior:** Entorno del backend.
+2. **PHP 8.4.1 o superior:** Entorno del backend (las dependencias de `composer.lock` lo exigen; se verificó con PHP 8.5).
 3. **Composer:** Gestor de dependencias de PHP.
 4. **Node.js (versión 20 o superior):** Incluye `npm`, para compilar el frontend SPA.
 5. **PostgreSQL 16 con pgAdmin 4:** Motor de base de datos relacional.
@@ -84,12 +84,12 @@ npm run dev
 Abrir en el navegador:
 **`http://localhost:5174`**
 
-| Rol de Trabajo | Correo de Acceso | Contraseña | Funciones Asignadas |
-| :--- | :--- | :--- | :--- |
-| **Administrador General** | `admin@gelawitto.com` | `password123` | Control total del sistema, seguridad, usuarios y auditoría inmutable. |
-| **Jefe de Producción** | `produccion@gelawitto.com` | `password123` | Crear recetas, simulador MRP, programar lotes y control de calidad. |
-| **Cajero / Punto de Venta** | `caja@gelawitto.com` | `password123` | Apertura de turno, cobro (mostrador/crédito) y arqueo de caja. |
-| **Contador / Finanzas** | `finanzas@gelawitto.com` | `password123` | Libro Diario (Partida Doble), Balance General, Estado de Resultados y compras. |
+| Rol de Trabajo | Correo de Acceso | Funciones Asignadas |
+| :--- | :--- | :--- |
+| **Administrador General** | `admin@gelawitto.com` | Control total del sistema, seguridad, usuarios y auditoría inmutable. |
+| **Jefe de Producción** | `produccion@gelawitto.com` | Crear recetas, simulador MRP, programar lotes y control de calidad. |
+| **Cajero / Punto de Venta** | `caja@gelawitto.com` | Apertura de turno, cobro (mostrador/crédito) y arqueo de caja. |
+| **Contador / Finanzas** | `finanzas@gelawitto.com` | Libro Diario (Partida Doble), Balance General, Estado de Resultados y compras. |
 
 ---
 
@@ -128,7 +128,7 @@ Abrir en el navegador:
 
 El sistema implementa una arquitectura modular desacoplada por dominios de negocio:
 
-- **Backend REST API (`erp-gelawitto-api`):** Laravel 11 con PHP 8.3+, estructurado en `Models`, `Repositories`, `Services`, `FormRequests`, `Resources` y `Controllers`. Devuelve exclusivamente respuestas estructuradas en formato `JsonResponse`. Implementa transacciones atómicas (`DB::transaction`) y bloqueo pesimista (`lockForUpdate`) en operaciones críticas.
+- **Backend REST API (`erp-gelawitto-api`):** Laravel 13 con PHP 8.4.1+, estructurado en `Models`, `Repositories`, `Services`, `FormRequests`, `Resources` y `Controllers`. Devuelve exclusivamente respuestas estructuradas en formato `JsonResponse`. Implementa transacciones atómicas (`DB::transaction`) y bloqueo pesimista (`lockForUpdate`) en operaciones críticas.
 - **Folios Atómicos con Secuencias PostgreSQL:** Generación de folios mediante 7 secuencias nativas de base de datos (`folio_compras_seq`, `folio_lotes_seq`, `folio_ventas_seq`, `folio_turnos_seq`, `folio_finanzas_seq`, `folio_calidad_seq`, `folio_asientos_seq`), previniendo colisiones por concurrencia.
 - **Reglas de Negocio en PostgreSQL:** La tasa de IVA, las temperaturas del congelador y los permisos de navegación se cargan desde las tablas `parametros`, `roles`, `modulos` y `rol_modulo`.
 - **Frontend SPA Desacoplado (`erp-gelawitto-ui`):** Vue 3 (Composition API + TypeScript) montado con Vite y Vue Router 4, consumiendo los endpoints REST a través de Axios (`@axios`), `useAuth` y `useFormulario`.
@@ -417,14 +417,14 @@ El comando `php artisan migrate:fresh --seed` construye las siguientes tablas en
 
 ## 8. Credenciales de Acceso al ERP
 
-Por políticas de seguridad, la interfaz de inicio de sesión no expone contraseñas ni selectores de acceso rápido en pantalla. Para ingresar al sistema una vez ejecutado `php artisan migrate:fresh --seed`, utiliza cualquiera de las siguientes cuentas iniciales:
+Por políticas de seguridad, la interfaz de inicio de sesión no expone contraseñas ni selectores de acceso rápido en pantalla. Para ingresar al sistema una vez ejecutado `php artisan migrate:fresh --seed`, utiliza cualquiera de las siguientes cuentas iniciales. La contraseña inicial la define el seeder `DatabaseSeeder.php` y debe cambiarse antes de cualquier uso fuera del laboratorio:
 
-| Rol Operativo | Nombre de Usuario | Correo Electrónico | Contraseña | Perfil y Módulos Clave |
-| :--- | :--- | :--- | :--- | :--- |
-| **Administrador** | Eduardo Cantarero | `admin@gelawitto.com` | `password123` | Control total del ERP, auditoría y seguridad |
-| **Producción** | Moises Zelaya | `produccion@gelawitto.com` | `password123` | Fichas técnicas, recetas y lotes de producción |
-| **Cajero** | Valeria Mendoza | `caja@gelawitto.com` | `password123` | Punto de venta, apertura, arqueo y corte de caja |
-| **Contador** | Carlos Navarrete | `finanzas@gelawitto.com` | `password123` | Flujo de egresos, pagos y compras a proveedores |
+| Rol Operativo | Nombre de Usuario | Correo Electrónico | Perfil y Módulos Clave |
+| :--- | :--- | :--- | :--- |
+| **Administrador** | Eduardo Cantarero | `admin@gelawitto.com` | Control total del ERP, auditoría y seguridad |
+| **Producción** | Moises Zelaya | `produccion@gelawitto.com` | Fichas técnicas, recetas y lotes de producción |
+| **Cajero** | Valeria Mendoza | `caja@gelawitto.com` | Punto de venta, apertura, arqueo y corte de caja |
+| **Contador** | Carlos Navarrete | `finanzas@gelawitto.com` | Flujo de egresos, pagos y compras a proveedores |
 
 ---
 
@@ -513,7 +513,7 @@ El repositorio está organizado en dos aplicaciones desacopladas (`erp-gelawitto
 
 ```text
 erp-gelawitto/
-├── erp-gelawitto-api/            # Backend REST API & Motor Transaccional (Laravel 11 + PostgreSQL 16)
+├── erp-gelawitto-api/            # Backend REST API & Motor Transaccional (Laravel 13 + PostgreSQL 16)
 │   ├── app/
 │   │   ├── Http/
 │   │   │   ├── Controllers/      # Controladores REST que devuelven JsonResponse pura

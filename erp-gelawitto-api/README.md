@@ -1,6 +1,6 @@
 # ERP Gelawitto API (Backend REST & Motor Transaccional)
 
-Servicio Backend REST y motor transaccional construido con Laravel 11 y PostgreSQL 16 para el sistema ERP Gelawitto, estructurado bajo el estandar de arquitectura desacoplada de Carnes San Martin (`SM_LOG_API`).
+Servicio Backend REST y motor transaccional construido con Laravel 13 y PostgreSQL 16 para el sistema ERP Gelawitto, estructurado bajo el estandar de arquitectura desacoplada de Carnes San Martin (`SM_LOG_API`).
 
 ## Caracteristicas Principales
 
